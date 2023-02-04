@@ -39,7 +39,7 @@ class Simulacao3D (Simulacao):
       self.nomeArquivo = f"pontos_{time()}.txt"
       YK = []
       self.abrirArquivo(self.massas, self.nomeArquivo)
-      for frame in self.funcaoLimiatada():
+      for frame in self.funcaoLimitada():
         R, P, E = frame
         yk = []
         for i in range(self.quantidade_corpos):
