@@ -16,38 +16,49 @@ class Simulacao3D (Simulacao):
     self.ylim = [-1000,1000]
     self.zlim = [-1000,1000]
   
-  def funcao (self):
+  def funcaoLimitada (self, t=0):
     for _ in range(self.qntdFrames):
       self.R, self.P, self.F = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0)
       self.E = H(self.R,self.P,self.massas)
       self.V = U(self.R,self.massas)
       yield self.R, self.P, self.E
+  
+  def funcao (self, t=0):
+    self.R, self.P, self.F = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0)
+    self.E = H(self.R,self.P,self.massas)
+    self.V = U(self.R,self.massas)
+    return self.R, self.P, self.E
 
   def simular (self, qntdFrames:int=0, exibir:bool=True, salvar:bool=False)->str:
     """
       Faz uma simulação 3d usando as condições iniciais informadas.
     """
     self.qntdFrames = qntdFrames
-    self.nomeArquivo = f"pontos_{time()}.txt"
 
-    YK = []
-    self.abrirArquivo(self.massas, self.nomeArquivo)
-    for frame in self.funcao():
-      R, P, E = frame
+    if salvar:
+      self.nomeArquivo = f"pontos_{time()}.txt"
+      YK = []
+      self.abrirArquivo(self.massas, self.nomeArquivo)
+      for frame in self.funcaoLimiatada():
+        R, P, E = frame
+        yk = []
+        for i in range(self.quantidade_corpos):
+          for j in range(self.dimensao):
+            yk += [R[i][j], P[i][j]]
+        YK.append(yk)
 
-      yk = []
-      for i in range(self.quantidade_corpos):
-        for j in range(self.dimensao):
-          yk += [R[i][j], P[i][j]]
-      YK.append(yk)
+        if len(YK) == self.QUANTIDADE_ANTES_SALVAR:
+          self.salvarPontos(YK, self.nomeArquivo)
+          YK = []
 
-      if len(YK) == self.QUANTIDADE_ANTES_SALVAR:
+      if len(YK) >= 0:
         self.salvarPontos(YK, self.nomeArquivo)
-        YK = []
 
-    if len(YK) >= 0:
-      self.salvarPontos(YK, self.nomeArquivo)
-
+    else:
+      self.fig = plt.figure(figsize=(12,6), dpi=100)
+      self.ax = self.fig.gca(projection = '3d')
+      ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=10,  repeat=False)
+      plt.show()
 
     
   def visualizar (self, R:list):
@@ -59,6 +70,7 @@ class Simulacao3D (Simulacao):
     self.ax = self.fig.gca(projection = '3d')
     ani = animation.FuncAnimation(self.fig, self.atualizar, arange(len(R)), interval=10,  repeat=False)
     plt.show()
+
 
   def atualizar (self, t):
     """

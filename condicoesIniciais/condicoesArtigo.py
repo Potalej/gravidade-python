@@ -2,7 +2,7 @@ import random
 from numpy import matrix
 from numpy.linalg import solve
 from auxiliares.auxiliares import centro_massas, momento_linear_total_velocidade, momentos_angulares, momento_inercia_cm, tensor_inercia_geral, prodvetR3
-from auxiliares.hamiltoniano import EC, U
+from auxiliares.hamiltoniano import EC, U, H
 
 class condicoesIniciais:
   """
@@ -104,18 +104,33 @@ class condicoesArtigo (condicoesIniciais):
 
     # 1) zerar rcm
     self.zerar_centro_massas()
-    print('centro de massas: ', self.rcm)
 
     # 2) zerar vcm = r'cm
     self.zerar_velocidade_centro_massas()
-    print('momento linear total: ', self.P)
 
-    # 3) zerar a energia total
+    # 3) zerar o momento angular
+    self.zerar_momento_angular()
+
+    # 2) zerar o centro de massas novamente
+    self.zerar_centro_massas()
+
+    # 2) zerar vcm = r'cm
+    self.zerar_velocidade_centro_massas()
+    
+    # 4) zerar a energia total
     self.zerar_energia_total()
 
-    # 4) zerar o momento angular
-    self.zerar_momento_angular()
+    self.rcm = centro_massas(self.massas, self.r)
+    self.P = momento_linear_total_velocidade(self.massas, self.v)
+    # calcula todos os momentos angulares
+    Ja = momentos_angulares(self.massas, self.r, self.v)
+    # momento angular total
+    self.J = [ sum(Jax[i] for Jax in Ja) for i in range(3) ]
+
+    print('centro de massas: ', self.rcm)
+    print('momento linear total: ', self.P)
     print('momento angular total: ', self.J)
+    print('energia total: ', H(self.r, self.p, self.massas))
 
 
   def zerar_centro_massas (self)->None:
@@ -178,6 +193,9 @@ class condicoesArtigo (condicoesIniciais):
           for i in range(self.dimensao)
         ]
       
+      self.p[a] = [
+        self.massas[a] * self.v[a][i] for i in range(self.dimensao)
+      ]
       # calcula o novo momento angular total
       self.J = matrix(J) + (matrix(I) * matrix(omega).T).T
 

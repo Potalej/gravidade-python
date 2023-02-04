@@ -5,6 +5,7 @@
   para o sistema de N-corpos.
 """
 from numpy import array, transpose, identity, ones, einsum, true_divide
+from auxiliares.hamiltoniano import *
 
 class RK4:
 
@@ -93,10 +94,10 @@ class RK4:
     norma = einsum('ijk,ijk->ij', difX, difX)**(3/2) + self.identidade
     # matriz de forças
     F = true_divide(self.prodM, norma)
-    F = self.G*einsum('ij,ijk->ijk', -F, difX)
+    F = self.G*einsum('ij,ijk->ijk', F, difX)
 
     # matriz de soma das forças
-    FSomas = sum(-F).tolist()
+    FSomas = sum(F).tolist()
 
     return F, array(FSomas)
 

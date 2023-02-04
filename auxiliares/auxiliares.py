@@ -33,21 +33,10 @@ def momentos_angulares (m:list, r:list, v:list)->list:
 
 def momentoAngular (R, P):
   """Momento angular total."""
-  dim = len(R[0])
-  if dim == 2:
-    soma = 0
-    funcao = prodvetR2
-  elif dim == 3:
-    soma = [0,0,0]
-    funcao = prodvetR3
-
-  for i in range(len(R)):
-    vet = funcao(R[i], P[i])
-    if dim == 3:
-      soma = [soma[i]+vet[i] for i in range(dim)] 
-    elif dim == 2:
-      soma += vet
-  return soma
+  Ja = momentos_angulares([], R, P)
+  Js = list(zip(*Ja))
+  J = [sum(Ji) for Ji in Js]
+  return J
 
 def centro_massas (m:list, r:list)->list:
   """Ponto do centro de massas do sistema."""
