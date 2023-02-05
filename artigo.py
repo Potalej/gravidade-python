@@ -4,7 +4,7 @@ from condicoesIniciais.condicoesArtigo import condicoesArtigo
 ### EXEMPLO GERAL COM E=0, P=0, J=0 E RCM=0 CONFORME O ARTIGO
 configs = {
   'dimensao': 3,
-  'qntdCorpos': 10, # qntd de corpos
+  'qntdCorpos': 30, # qntd de corpos
   'massas': {
     'min': 100,
     'max': 100,
@@ -44,7 +44,7 @@ condicoes = condicoesArtigo(configs)
 from auxiliares.hamiltoniano import H
 
 S = Simulacao3D(condicoes.massas, condicoes.r, condicoes.p, G=150)
-S.xlim = [-5000,5000]
-S.ylim = [-5000,5000]
-S.zlim = [-5000,5000]
-S.simular(500, True, False)
+# S.xlim = [-5000,5000]
+# S.ylim = [-5000,5000]
+# S.zlim = [-5000,5000]
+S.simular(1500, False, True)
