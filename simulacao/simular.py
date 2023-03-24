@@ -1,5 +1,5 @@
 from config.configs import animacao, dados
-from auxiliares.auxiliares import momento_inercia_cm, centro_massas, complexidade
+from auxiliares.auxiliares import momento_inercia_cm, centro_massas, complexidade, momentoAngular
 from auxiliares.hamiltoniano import H, U
 from integracao.integracao import RK4 as metodo_integracao
 
@@ -28,8 +28,21 @@ class Simulacao:
     self.E0 = H(self.R, self.P, self.massas)
     self.E = self.E0
 
+    # momento angular inicial
+    self.J0 = momentoAngular(R0, P0)
+
+    # momento linear total inicial
+    self.P0_tot = [sum(x) for x in list(zip(*P0))]
+
     # quantidade de integrações por passo
     self.n = 100
+
+    # centro de massas inicial (sem o total de massas)
+    self.rcm_int = [
+      sum(self.massas[a]*self.R[a][0] for a in range(self.quantidade_corpos)),
+      sum(self.massas[a]*self.R[a][1] for a in range(self.quantidade_corpos)),
+      sum(self.massas[a]*self.R[a][2] for a in range(self.quantidade_corpos))
+    ]
 
   def salvarPontos (self, pontos:list, nome='pontos.txt'):
     coords = [[str(ponto) for ponto in lista] for lista in pontos]

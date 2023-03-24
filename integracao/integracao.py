@@ -4,8 +4,9 @@
   A integração é feita matricialmente e adaptada especialmente
   para o sistema de N-corpos.
 """
-from numpy import array, transpose, identity, ones, einsum, true_divide
+from numpy import array, transpose, identity, ones, einsum, true_divide, zeros
 from auxiliares.hamiltoniano import *
+from time import time
 
 class RK4:
 
@@ -88,18 +89,17 @@ class RK4:
     
     # matriz X cheia
     X = einsum('ij,ijk->ijk', self.vetorUm, X)
-    # diferença
-    difX = X - X.transpose(1,0,2)
+    # diferença rb - ra
+    difX = X.transpose(1,0,2) - X
     # norma
     norma = einsum('ijk,ijk->ij', difX, difX)**(3/2) + self.identidade
     # matriz de forças
     F = true_divide(self.prodM, norma)
-    F = self.G*einsum('ij,ijk->ijk', F, difX)
-
+    F = -self.G*einsum('ij,ijk->ijk', F, difX)
+    
     # matriz de soma das forças
-    FSomas = sum(F).tolist()
-
-    return F, array(FSomas)
+    FSomas = sum(F)
+    return F, FSomas
 
   def runge_kutta4 (self, R, P, FSomas):
     """
@@ -119,8 +119,37 @@ class RK4:
 
     return novas_posicoes, novos_momentos
 
-  def aplicarNVezes (self, R, P, n=1, E=0):
+  def aplicarNVezes (self, R, P, n=1, E=0, J0=[0,0,0], P0=[0,0,0], rcm0_int=[0,0,0]):
+    Es = []
+    Js = []
+    Ps = [[],[],[]]
     for _ in range(n):
+      # forças no instante atual
       F, FSomas = self.forcas(R)
+      
+      # integração numérica
       R, P = self.runge_kutta4(R,P,FSomas)
-    return R, P, F
+      
+      # R, P, e = ajustarH(R, P, self.massas, E, FSomas, R0, P0)
+      # F, FSomas = self.forcas(R)
+      # R, P, e = ajustarH(R, P, self.massas, E, FSomas)
+      R, P = ajusteJ(R, P, J0)
+      P = ajustePTotal(P, P0)
+      R = ajusteCentroMassas(self.massas, R, rcm0_int)
+      # ajuste da energia
+
+      # R, P = juntos(R, P, self.massas, E, FSomas, J0)
+
+      # PARECE QUE CORRIGIR A ENERGIA PRIMEIRO E DEPOIS O MOMENTO ANGULAR DÁ MELHOR PRO MOMENTO ANGULAR. VER ISSO!
+
+      # níveis de energia e momento angular atuais
+      e = H(R, P, self.massas)
+      J = momentoAngular(R,P)
+      
+      p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
+      Ps[0].append(p[0])
+      Ps[1].append(p[1])
+      Ps[2].append(p[2])
+      Es.append(e)
+      Js.append(J)
+    return R, P, F, Es, Js, Ps

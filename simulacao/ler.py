@@ -16,7 +16,7 @@ def ler_arquivo (dir, dim=2):
       if posicao == '': break
       ps = [float(coord) for coord in posicao.split(',')]
       R = [[ps[i+2*j] for j in range(dim)] for i in range(0, len(ps), int(2*dim))]
-      # P = [[ps[i+2*j+1] for j in range(dim)] for i in range(0, len(ps), int(2*dim))]
+      P = [[ps[i+2*j+1] for j in range(dim)] for i in range(0, len(ps), int(2*dim))]
       Rs.append(R)
-      # Ps.append(P)
+      Ps.append(P)
     return massas, Rs, Ps

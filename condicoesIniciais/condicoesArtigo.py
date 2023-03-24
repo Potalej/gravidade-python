@@ -1,82 +1,37 @@
-import random
 from numpy import matrix
 from numpy.linalg import solve
-from auxiliares.auxiliares import centro_massas, momento_linear_total_velocidade, momentos_angulares, momento_inercia_cm, tensor_inercia_geral, prodvetR3
+from auxiliares.auxiliares import centro_massas, momento_linear_total_velocidade, momentos_angulares, momentoAngular, momento_inercia_cm, tensor_inercia_geral, prodvetR3
 from auxiliares.hamiltoniano import EC, U, H
-
-class condicoesIniciais:
-  """
-    Classe básica para gerar condições iniciais.
-    Contém funções voltadas para a geração aleatória de 
-    posições, velocidades e momentos dados os limites e
-    os intervalos de passo.
-  """
-  def __init__ (self, N:int=2, dimensao:int=3):
-    self.N = N
-    self.dimensao = dimensao
-  
-  def gerar_massas (self, configs_massas:dict)->list:
-    """Gera massas aleatórias num intervalo dado."""
-    m_min, m_max = configs_massas['min'], configs_massas['max']
-    if configs_massas['inteiras']:
-      self.massas = [random.randint(m_min, m_max) for i in range(self.N)]
-    else:
-      self.massas = [random.randrange(m_min, m_max) for i in range(self.N)]
-    self.mtot = sum(self.massas)
-    return self.massas
-
-  def gerar_valores(self, configs_valores:dict, repete:bool=True)->list:
-    """Gerar uma lista"""
-    int_x = configs_valores['x']['intervalo']
-    int_y = configs_valores['y']['intervalo']
-
-    # gera para as duas primeiras coordenadas
-    if self.dimensao == 2:
-      if repete:
-        vals = [[
-          random.randrange(*int_x, configs_valores['x']['dist_min']),
-          random.randrange(*int_y, configs_valores['y']['dist_min'])
-        ] for a in range(self.N)]
-      else:
-        vals = [
-          random.sample(range(*int_x, configs_valores['x']['dist_min']), self.N),
-          random.sample(range(*int_y, configs_valores['y']['dist_min']), self.N)
-        ]
-        vals = list(zip(*vals))
-
-    # se for no R3, precisa adicionar mais uma dimensão
-    if self.dimensao == 3:
-      int_z = configs_valores['z']['intervalo']
-      if repete:
-        vals = [[
-          random.randrange(*int_x, configs_valores['x']['dist_min']),
-          random.randrange(*int_y, configs_valores['y']['dist_min']),
-          random.randrange(*int_z, configs_valores['z']['dist_min']),
-        ] for a in range(self.N)]
-      else:
-        vals = [
-          random.sample(range(*int_x, configs_valores['x']['dist_min']), self.N),
-          random.sample(range(*int_y, configs_valores['y']['dist_min']), self.N),
-          random.sample(range(*int_z, configs_valores['z']['dist_min']), self.N)
-        ]
-        vals = list(zip(*vals))
-
-    return vals
-
-
+from condicoesIniciais.condicoesIniciais import condicoesIniciais
 
 class condicoesArtigo (condicoesIniciais):
   
-  def __init__ (self, configs:dict):
+  def __init__ (self, configs:dict={}, valoresIniciais:dict={}):
     """
       Gera as coordenadas básicas.
     """
+    # se quiser gerar
+    if bool(configs):
     # quantidade de corpos
-    self.N = configs['qntdCorpos']
-    super().__init__(self.N, configs['dimensao'])
+      self.N = configs['qntdCorpos']
+      super().__init__(self.N, configs['dimensao'])
 
-    # gera o básico
-    self.basico(configs)
+      # gera o básico
+      self.basico(configs)
+
+    elif bool(valoresIniciais):
+      self.N = valoresIniciais["qntdCorpos"]
+      super().__init__(self.N, valoresIniciais['dimensao'])
+
+      self.massas = valoresIniciais['massas']
+      self.mtot = sum(self.massas)
+      self.r = valoresIniciais['posicoes']
+      self.v = [
+        [p/self.massas[i] for p in valoresIniciais['momentos'][i]]
+        for i in range(self.N)]
+      
+    else:
+      raise ValueError("Nenhum valor informado!")
 
     # aplicando as condições sobre os valores gerados
     self.condicionar()
@@ -123,9 +78,7 @@ class condicoesArtigo (condicoesIniciais):
     self.rcm = centro_massas(self.massas, self.r)
     self.P = momento_linear_total_velocidade(self.massas, self.v)
     # calcula todos os momentos angulares
-    Ja = momentos_angulares(self.massas, self.r, self.v)
-    # momento angular total
-    self.J = [ sum(Jax[i] for Jax in Ja) for i in range(3) ]
+    self.J = momentoAngular(self.r, self.p)
 
     print('centro de massas: ', self.rcm)
     print('momento linear total: ', self.P)
@@ -192,10 +145,9 @@ class condicoesArtigo (condicoesIniciais):
           self.v[a][i] + ra_omega[i]
           for i in range(self.dimensao)
         ]
-      
-      self.p[a] = [
-        self.massas[a] * self.v[a][i] for i in range(self.dimensao)
-      ]
+        self.p[a] = [
+          self.massas[a] * self.v[a][i] for i in range(self.dimensao)
+        ]
       # calcula o novo momento angular total
       self.J = matrix(J) + (matrix(I) * matrix(omega).T).T
 
