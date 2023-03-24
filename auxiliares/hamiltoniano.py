@@ -21,24 +21,25 @@ def U (R, m:list)->float:
       ra = R[a]
       rb = R[b]
       dist = sqrt(sum((ra[i] - rb[i])**2 for i in range(len(ra))))
-      soma += m[a]*m[b] / dist
+      soma += m[a]*m[b] / sqrt(dist**2 + 1**2)
   return -soma
 
 def H (R, P, m:list)->float:
   """Energia total"""
   return EC(P, m) + U(R, m)
 
-def derH_derR (R, m, a):
+def derH_derR (R, m, a, G=3):
   ma = m[a]
   Ra = R[a]
   der = [0,0,0]
   for b in range(len(m)):
     if a == b: continue
     Rb = R[b]
-    rab3 = sum((Ra[i]-Rb[i])**2 for i in range(3))**(3/2)
+    norma = sum((Ra[i]-Rb[i])**2 for i in range(3))**(1/2) 
+    rab3 = (norma**2 + 1**2)**(3/2)
     for i in range(3):
       der[i] += m[b]*(Rb[i]-Ra[i])/rab3
-  der = [-3*ma*i for i in der]
+  der = [-G*ma*i for i in der]
   return der
 
 def gradH (R, P, m):

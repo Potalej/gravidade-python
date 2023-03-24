@@ -138,9 +138,9 @@ class Simulacao3D (Simulacao):
         return [sum(a)/mtot for a in list(zip(*Rcm))] 
 
       Rcms = list(zip(*[centrom(self.massas, Rsa) for Rsa in Rs]))
-      Rcmx = Rcms[0]
-      Rcmy = Rcms[1]
-      Rcmz = Rcms[2]
+      Rcmx = ["Rcmx"] + Rcms[0]
+      Rcmy = ["Rcmy"] + Rcms[1]
+      Rcmz = ["Rcmz"] + Rcms[2]
 
       tabela = [E_info, Jx_info, Jy_info, Jz_info, Px_info, Py_info, Pz_info, Rcmx, Rcmy, Rcmz]
       tabela = tabulate(tabela, headers=["Integral", "Inicial", "Min", "Max", "Média"])

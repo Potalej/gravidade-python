@@ -84,19 +84,22 @@ class RK4:
       R : np.array
         Vetor de posições das partículas.
     """
+    erro = 1
+
+    
     # coordenadas
     X = [[Ri] for Ri in R]
-    
     # matriz X cheia
     X = einsum('ij,ijk->ijk', self.vetorUm, X)
     # diferença rb - ra
     difX = X.transpose(1,0,2) - X
     # norma
-    norma = einsum('ijk,ijk->ij', difX, difX)**(3/2) + self.identidade
+    norma = einsum('ijk,ijk->ij', difX, difX)
+    erro =  ones([self.qntd, self.qntd]) * erro**2
+    norma = (norma + erro)**(3/2) + self.identidade
     # matriz de forças
     F = true_divide(self.prodM, norma)
     F = -self.G*einsum('ij,ijk->ijk', F, difX)
-    
     # matriz de soma das forças
     FSomas = sum(F)
     return F, FSomas
@@ -130,12 +133,11 @@ class RK4:
       # integração numérica
       R, P = self.runge_kutta4(R,P,FSomas)
       
-      # R, P, e = ajustarH(R, P, self.massas, E, FSomas, R0, P0)
       # F, FSomas = self.forcas(R)
       # R, P, e = ajustarH(R, P, self.massas, E, FSomas)
-      R, P = ajusteJ(R, P, J0)
-      P = ajustePTotal(P, P0)
-      R = ajusteCentroMassas(self.massas, R, rcm0_int)
+      # R, P = ajusteJ(R, P, J0)
+      # P = ajustePTotal(P, P0)
+      # R = ajusteCentroMassas(self.massas, R, rcm0_int)
       # ajuste da energia
 
       # R, P = juntos(R, P, self.massas, E, FSomas, J0)
