@@ -7,6 +7,8 @@ from auxiliares.auxiliares import centro_massas, momentoAngular
 from statistics import mean
 from tabulate import tabulate
 from time import time
+from os import mkdir
+from moviepy.editor import *
 
 DIM = 3
 DIRBASE = "./fortran/simulacoes/"
@@ -16,7 +18,7 @@ def ler_csv (dir):
   print("Lendo o arquivo...")
 
   # captura com header para saber o tamanho
-  df = read_csv(DIRBASE + dir, nrows=1)
+  df = read_csv(DIRBASE + dir, nrows=1, header=None)
 
   # quantidade de corpos
   massas = df.values.tolist()[0]
@@ -25,17 +27,21 @@ def ler_csv (dir):
   qntdCols = 2 * N * DIM
 
   # agora le sem o cabecalho
-  df = read_csv(DIRBASE + dir, header=None, skiprows=[0])
+  df = read_csv(DIRBASE + dir, header=None, skiprows=[0], dtype=float)
+  # df = read_csv(DIRBASE + dir, header=None, skiprows=[0], dtype=float)
   valores = df.values.tolist()
   
 
   # converte o que foi lido em posicoes e momentos
   posicoes, momentos = [[] for i in range(N)], [[] for i in range(N)]
   print("Convertendo os dados...")
+  # fator = 40
+  fator = 1
   for v in valores:
     for corpo in range(N):
-      R = [v[corpo], v[corpo+DIM], v[corpo+2*DIM]]
-      P = [v[N*DIM+corpo], v[N*DIM+corpo+DIM], v[N*DIM+corpo+2*DIM]]
+      # R = [v[corpo]/fator, v[corpo+DIM]/fator, v[corpo+2*DIM]/fator]
+      R = [v[corpo]/fator, v[corpo+N]/fator, v[corpo+2*N]/fator]
+      P = [v[N*DIM+corpo], v[N*DIM+corpo+DIM], v[N*DIM+corpo+2*DIM]] # arrumar esse tambem
       posicoes[corpo].append(R)
       momentos[corpo].append(P)
 
@@ -53,7 +59,60 @@ def visualizar (R:list):
     ax.plot(Ri[0], Ri[1], Ri[2])
   ax.set_xlim3d(*[-1000,1000])
   ax.set_ylim3d(*[-1000,1000])
+  ax.set_zlim3d(*[-1000,1000])
   plt.show()
+
+def salvar_animacao (R:list):
+  posicoes = list(zip(*R))
+
+  pasta = str(round(time())) 
+  mkdir(f'pontos/{pasta}')
+
+  def atualizar (t):
+    ax.clear()
+    ax.set_xlim3d(*[-500,500])
+    ax.set_ylim3d(*[-500,500])
+    ax.set_zlim3d(*[-500,500])
+    # plota as partículas
+    Rs = posicoes[t]
+    Rs = list(zip(*Rs))
+    X, Y, Z = Rs
+    ax.scatter(X, Y, Z, c="black")
+  qntd = 100
+  for i in range(int(len(posicoes)/qntd)):
+    print('gerando frame ', i)
+    funcao = lambda t: atualizar(qntd*i+t)
+    fig = plt.figure(figsize=(12,6), dpi=100)
+    ax = fig.gca(projection = '3d')
+    ax.set_xlim3d(*[-500,500])
+    ax.set_ylim3d(*[-500,500])
+    ax.set_zlim3d(*[-500,500])
+    ani = animation.FuncAnimation(fig, funcao, arange(qntd), interval=10, repeat=False)
+    writervideo = animation.PillowWriter(fps=30)
+    ani.save(f'pontos/{pasta}/frame{i}.gif', writer=writervideo)
+    plt.close()
+  
+  # agora gera um arquivo de vídeo
+  arquivos = []
+  dir = lambda i: f'pontos/{pasta}/frame{i}.gif'
+  for i in range(int(len(posicoes)/qntd)):
+    clip = VideoFileClip(dir(i))
+    # clip.fx(vfx.speedx,2)
+    arquivos.append(clip)
+  # concatena e salva
+  final = concatenate_videoclips(arquivos)
+  final.write_videofile(f'pontos/{pasta}/video_{pasta}.mp4')
+  
+def gerar_video (pasta, inicio, fim):
+  dir = lambda i: f'pontos/{pasta}/frame{i}.gif'
+  # gera um video a partir do range 
+  arquivos = []
+  for i in range(inicio, fim):
+    clip = VideoFileClip(dir(i))
+    arquivos.append(clip)
+  #concatena e salva
+  final = concatenate_videoclips(arquivos)
+  final.write_videofile(f'pontos/{pasta}/video_{pasta}_{inicio}_{fim}.mp4')
 
 def visualizar_tempo_real (R:list):
 
@@ -64,16 +123,22 @@ def visualizar_tempo_real (R:list):
 
   def atualizar (t):
     ax.clear()
-    Rs = posicoes[:t] if t > 0 else [posicoes[t]]
-    Rs = list(zip(*Rs))
+    ax.set_xlim3d(*[-1000,1000])
+    ax.set_ylim3d(*[-1000,1000])
+    ax.set_zlim3d(*[-1000,1000])
+    # plota as partículas
+    Rs = posicoes[t]
     for r in Rs:
-      X, Y, Z = list(zip(*r))
-      ax.plot(X, Y, Z)
+      X, Y, Z = r
+      ax.scatter(X, Y, Z, c="black")
 
-  ani = animation.FuncAnimation(fig, atualizar, arange(len(posicoes)), interval=10, repeat=False)
+  ax.set_xlim3d(*[-1000,1000])
+  ax.set_ylim3d(*[-1000,1000])
+  ax.set_zlim3d(*[-1000,1000])
+  ani = animation.FuncAnimation(fig, atualizar, arange(len(posicoes)), interval=100, repeat=False)
   plt.show()
 
-def estatisticas (m:list, R:list, P:list):
+def estatisticas (m:list, R:list, P:list, G:float):
   """
     Exibe as estatísticas
   """
@@ -95,7 +160,6 @@ def estatisticas (m:list, R:list, P:list):
   for t in range(len(R)):
 
     Rt, Pt = R[t], P[t]
-
     J = momentoAngular(Rt, Pt)
     infos["Jx"] += [J[0]]
     infos["Jy"] += [J[1]]
@@ -111,7 +175,7 @@ def estatisticas (m:list, R:list, P:list):
     infos["Rcmy"] += [Rcm[1]]
     infos["Rcmz"] += [Rcm[2]]
 
-    energia = H(Rt, Pt, m)
+    energia = H(Rt, Pt, m, G)
     infos["H"] += [energia]
   
   # agora calcula as estatísticas
@@ -129,7 +193,31 @@ def estatisticas (m:list, R:list, P:list):
   Rcmy_info = ["Rcmx", infos["Rcmy"][0], min(infos["Rcmy"]), max(infos["Rcmy"]), mean(infos["Rcmy"])]
   Rcmz_info = ["Rcmx", infos["Rcmz"][0], min(infos["Rcmz"]), max(infos["Rcmz"]), mean(infos["Rcmz"])]
 
-  tabela = [H_info, Jx_info, Jy_info, Jz_info, Px_info, Py_info, Rcmx_info, Pz_info, Rcmy_info, Rcmz_info]
+  tabela = [H_info, Jx_info, Jy_info, Jz_info, Px_info, Py_info, Pz_info, Rcmx_info, Rcmy_info, Rcmz_info]
   tabela = tabulate(tabela, headers=["Integral", "Inicial", "Min", "Max", "Média"])
   print()
   print(tabela, end="\n\n")
+
+  fig, ax = plt.subplots(1, 4, figsize=(16,8))
+  
+  ax[0].plot(infos["H"], label="H")
+  ax[0].set_ylabel("H")
+  ax[0].legend()
+  
+  ax[1].plot(infos["Jx"], label="Jx")
+  ax[1].plot(infos["Jy"], label="Jy")
+  ax[1].plot(infos["Jz"], label="Jz")
+  ax[1].legend()
+
+  ax[2].plot(infos["Px"], label="Px")
+  ax[2].plot(infos["Py"], label="Py")
+  ax[2].plot(infos["Pz"], label="Pz")
+  ax[2].legend()
+
+  ax[3].plot(infos["Rcmx"], label="Rcmx")
+  ax[3].plot(infos["Rcmy"], label="Rcmy")
+  ax[3].plot(infos["Rcmz"], label="Rcmz")
+  ax[3].legend()
+  
+  plt.show()
+  

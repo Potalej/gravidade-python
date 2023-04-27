@@ -22,7 +22,7 @@ class condicoesArtigo (condicoesIniciais):
     elif bool(valoresIniciais):
       self.N = valoresIniciais["qntdCorpos"]
       super().__init__(self.N, valoresIniciais['dimensao'])
-
+      self.G = valoresIniciais['G']
       self.massas = valoresIniciais['massas']
       self.mtot = sum(self.massas)
       self.r = valoresIniciais['posicoes']
@@ -83,7 +83,7 @@ class condicoesArtigo (condicoesIniciais):
     print('centro de massas: ', self.rcm)
     print('momento linear total: ', self.P)
     print('momento angular total: ', self.J)
-    print('energia total: ', H(self.r, self.p, self.massas))
+    print('energia total: ', H(self.r, self.p, self.massas, self.G))
 
 
   def zerar_centro_massas (self)->None:
@@ -158,7 +158,7 @@ class condicoesArtigo (condicoesIniciais):
     # calcula a energia cinética atual
     energia_cinetica = EC(self.p, self.massas)
     # calcula a energia potencial atual
-    energia_potencial = U(self.r, self.massas)
+    energia_potencial = U(self.r, self.massas, self.G)
 
     # fator de razão
     fator = (-energia_potencial/energia_cinetica)**.5

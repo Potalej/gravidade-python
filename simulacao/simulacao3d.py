@@ -4,8 +4,8 @@ from numpy import arange
 from moviepy.editor import *
 
 from simulacao.simular import Simulacao
-from auxiliares.auxiliares import centro_massas
-from auxiliares.hamiltoniano import H, U
+from auxiliares.auxiliares import centro_massas, momento_inercia_cm
+from auxiliares.hamiltoniano import H, U, EC
 from time import time
 import os
 
@@ -15,6 +15,7 @@ class Simulacao3D (Simulacao):
 
   def __init__ (self, massas:list, R0: list, P0: list, h:float=0.05, G:float=1):
     super().__init__(massas, R0, P0, h, G)
+    self.G = G
     self.exibir_centro_massas = False
     self.xlim = [-1000,1000]
     self.ylim = [-1000,1000]
@@ -23,21 +24,25 @@ class Simulacao3D (Simulacao):
   def funcaoLimitada (self, t=0):
     for _ in range(self.qntdFrames):
       self.R, self.P, self.F, Es, Js = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0)
-      self.E = H(self.R,self.P,self.massas)
-      self.V = U(self.R,self.massas)
+      self.E = H(self.R,self.P,self.massas,self.G)
+      self.V = U(self.R,self.massas,self.G)
       yield self.R, self.P, self.E
   
   def funcaoLimitada1 (self, t=0):
     for _ in range(self.qntdFrames):
       self.R, self.P, self.F, Es, Js, Ps = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0,P0=self.P0_tot, rcm0_int=self.rcm_int)
-      self.E = H(self.R,self.P,self.massas)
-      self.V = U(self.R,self.massas)
+      self.E = H(self.R,self.P,self.massas,self.G)
+      self.V = U(self.R,self.massas,self.G)
       
       try: self.Es += Es
       except: self.Es = Es
 
-      try: self.Js += Js
-      except: self.Js = Js
+      try: 
+        self.Js += Js
+        self.JsPasso += [Js[-1]]
+      except: 
+        self.Js = Js
+        self.JsPasso  = [Js[-1]]
 
       try: 
         self.Ps[0] += Ps[0]
@@ -53,8 +58,8 @@ class Simulacao3D (Simulacao):
   
   def funcao (self, t=0):
     self.R, self.P, self.F, Es, Js, Ps = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0,P0=self.P0_tot, rcm0_int=self.rcm_int)
-    self.E = H(self.R,self.P,self.massas)
-    self.V = U(self.R,self.massas)
+    self.E = H(self.R,self.P,self.massas,self.G)
+    self.V = U(self.R,self.massas,self.G)
     return self.R, self.P, self.E
 
   def simular (self, qntdFrames:int=0, exibir:bool=True, salvar:bool=False)->str:
@@ -90,11 +95,13 @@ class Simulacao3D (Simulacao):
 
     else:
       Rs, Ps, Pa = [], [], []
+      Pas = []
       t0 = time()
       for frame in self.funcaoLimitada1():
         R, P, E = frame
         Rs.append(R)
         Pa = list(zip(*P))
+        Pas.append(P)
         Ps.append([sum(Pa[0]), sum(Pa[1]), sum(Pa[2])])
 
       print('TEMPO:', time() - t0)
@@ -138,15 +145,85 @@ class Simulacao3D (Simulacao):
         return [sum(a)/mtot for a in list(zip(*Rcm))] 
 
       Rcms = list(zip(*[centrom(self.massas, Rsa) for Rsa in Rs]))
-      Rcmx = ["Rcmx"] + Rcms[0]
-      Rcmy = ["Rcmy"] + Rcms[1]
-      Rcmz = ["Rcmz"] + Rcms[2]
+      Rcmx = ["Rcmx"] + list(Rcms[0])
+      Rcmy = ["Rcmy"] + list(Rcms[1])
+      Rcmz = ["Rcmz"] + list(Rcms[2])
 
       tabela = [E_info, Jx_info, Jy_info, Jz_info, Px_info, Py_info, Pz_info, Rcmx, Rcmy, Rcmz]
       tabela = tabulate(tabela, headers=["Integral", "Inicial", "Min", "Max", "Média"])
       print()
       print(tabela)
       print()
+
+      ###########################
+      # desigualdade de sundman #
+      ###########################
+      
+      # quadrado da norma do momento angular
+      # indice_maximo = 0
+      # norma2_J = []
+      # for i, J in enumerate(self.JsPasso):
+      #   c2 = sum(ji**2 for ji in J)
+      #   if i > 0:
+      #     if c2 >= max(norma2_J):
+      #       indice_maximo = i
+      #   norma2_J.append(c2)
+
+      # # 2 I T
+      # limitante_J = [
+      #   2 * momento_inercia_cm(self.massas, Rs[i]) * EC(Pas[i], self.massas) for i in range(len(Rs))
+      # ]
+
+      # foi_falso = 0
+      # for i in range(len(norma2_J)):
+      #   if norma2_J[i] > limitante_J[i]:
+      #     foi_falso += 1
+
+      # print()
+      # print('DESIGUALDADE DE SUNDMAN: ||J||2 <= 2IT ?')
+      # print('Maximo: ', norma2_J[indice_maximo], limitante_J[indice_maximo])
+      # print('Foi falso', foi_falso, 'vezes')
+      # print()
+
+      # ##########################
+      # #  separacoes max e min  #
+      # ##########################
+      
+      # # energia potencial
+      # lista_U = [U(R, self.massas, self.G) for R in Rs]
+
+      # dist = lambda x, y: sum((x[i]-y[i])**2 for i in range(len(x)))**.5
+
+      # distancias_minimas = []
+      # for R in Rs:
+      #   distancias = []
+      #   for a in range(len(R)):
+      #     Ra = R[a]
+      #     for b in range(len(R)):
+      #       if a == b: continue
+      #       Rb = R[b]
+      #       distancias.append(dist(Ra, Rb))
+  
+      #   distancias_minimas.append(min(distancias))
+      
+      # m0 = min(self.massas)
+      # m1 = max(self.massas)
+      # sucessos = 0
+      # for i in range(len(lista_U)):
+      #   lado_esquerdo = - self.G*m1*m1/(2*distancias_minimas[i])
+      #   lado_direito = - self.G*m0*m0/distancias_minimas[i]
+      #   if lado_esquerdo <= lista_U[i] and lista_U[i] <= lado_direito:
+      #     print(f'SUCESSO: r = {distancias_minimas[i]} e H = {H(Rs[i], Pas[i], self.massas, self.G)} \t {lado_esquerdo} < {lista_U[i]} < {lado_direito}')
+      #     sucessos += 1
+      #   else:
+      #     print(f'Falhou: r = {distancias_minimas[i]} e H = {H(Rs[i], Pas[i], self.massas, self.G)} \t {lado_esquerdo} < {lista_U[i]} < {lado_direito}')
+
+      # print(f'\nTivemos {100*sucessos/len(lista_U)}% de sucesso.')
+
+
+      ###########################
+      #         graficos        #
+      ###########################
 
       fig, ax = plt.subplots(1, 4, figsize=(16,8))
 

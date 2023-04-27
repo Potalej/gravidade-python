@@ -16,19 +16,22 @@ momentos = [
   [0,-5,-10]
 ]
 
+G = 3
+
 valoresIniciais = {
   'qntdCorpos': len(massas),
   'dimensao': len(posicoes[0]),
   'posicoes': posicoes,
   'momentos': momentos,
-  'massas': massas
+  'massas': massas,
+  'G': G
 }
 
 C = condicoesArtigo(valoresIniciais=valoresIniciais)
 
 from simulacao.simulacao3d import Simulacao3D
 
-S = Simulacao3D(massas, C.r, C.p, G=3)
+S = Simulacao3D(massas, C.r, C.p, G=G)
 # S.xlim = [-200,200]
 # S.ylim = [-200,200]
 # S.zlim = [-200,200]

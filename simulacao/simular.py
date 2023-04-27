@@ -19,13 +19,14 @@ class Simulacao:
     self.mtot = sum(self.massas)
 
     self.R, self.P = R0, P0
+    self.G = G
 
     # inicializa o método
     self.h = h
     self.metodo = metodo_integracao(self.massas, self.h, G=G, dimensao=self.dimensao)
 
     # energia inicial
-    self.E0 = H(self.R, self.P, self.massas)
+    self.E0 = H(self.R, self.P, self.massas, self.G)
     self.E = self.E0
 
     # momento angular inicial

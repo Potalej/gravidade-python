@@ -14,19 +14,19 @@ def EC (P, m:list)->float:
     soma += pi_pa/(2*m[a])
   return soma
 
-def U (R, m:list)->float:
+def U (R, m:list, G)->float:
   soma = 0
   for b in range(1, len(m)):
     for a in range(b):
       ra = R[a]
       rb = R[b]
       dist = sqrt(sum((ra[i] - rb[i])**2 for i in range(len(ra))))
-      soma += m[a]*m[b] / sqrt(dist**2 + 1**2)
-  return -soma
+      soma += m[a]*m[b] / dist
+  return -G*soma
 
-def H (R, P, m:list)->float:
+def H (R, P, m:list, G)->float:
   """Energia total"""
-  return EC(P, m) + U(R, m)
+  return EC(P, m) + U(R, m, G)
 
 def derH_derR (R, m, a, G=3):
   ma = m[a]
@@ -110,20 +110,7 @@ def ajusteJ (R, P, J0):
   fatory = true_divide(J[1]-J0[1], norma_grady)
   fatorz = true_divide(J[2]-J0[2], norma_gradz)
 
-  # soma os valores para adicionar de uma vez
-  # dif = [fatorx*gradx[i] + fatory*grady[i] + fatorz*gradz[i] for i in range(len(gradx))] # 6N # backup
-  # a vantagem de usar a dif acima eh poder filtrar pelo maximo, mas talvez nao seja necessario nesse caso...
-
   for a in range(len(R)): # N       
-
-    # R[a][0] -= dif[6*a+0] # backup
-    # P[a][0] -= dif[6*a+1] # backup
-
-    # R[a][1] -= dif[6*a+2] # backup
-    # P[a][1] -= dif[6*a+3] # backup
-
-    # R[a][2] -= dif[6*a+4] # backup
-    # P[a][2] -= dif[6*a+5] # backup
 
     R[a][0] -= fatorx*gradx[6*a+0] + fatory*grady[6*a+0] + fatorz*gradz[6*a+0]
     P[a][0] -= fatorx*gradx[6*a+1] + fatory*grady[6*a+1] + fatorz*gradz[6*a+1]

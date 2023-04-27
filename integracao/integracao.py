@@ -84,7 +84,7 @@ class RK4:
       R : np.array
         Vetor de posições das partículas.
     """
-    erro = 1
+    # erro = 0
 
     
     # coordenadas
@@ -95,8 +95,11 @@ class RK4:
     difX = X.transpose(1,0,2) - X
     # norma
     norma = einsum('ijk,ijk->ij', difX, difX)
-    erro =  ones([self.qntd, self.qntd]) * erro**2
-    norma = (norma + erro)**(3/2) + self.identidade
+    # erro =  ones([self.qntd, self.qntd]) * erro**2
+    # norma = (norma + erro)**(3/2) + self.identidade
+    
+    norma = (norma)**(3/2) + self.identidade
+
     # matriz de forças
     F = true_divide(self.prodM, norma)
     F = -self.G*einsum('ij,ijk->ijk', F, difX)
@@ -145,7 +148,7 @@ class RK4:
       # PARECE QUE CORRIGIR A ENERGIA PRIMEIRO E DEPOIS O MOMENTO ANGULAR DÁ MELHOR PRO MOMENTO ANGULAR. VER ISSO!
 
       # níveis de energia e momento angular atuais
-      e = H(R, P, self.massas)
+      e = H(R, P, self.massas, self.G)
       J = momentoAngular(R,P)
       
       p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
