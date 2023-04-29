@@ -32,13 +32,10 @@ C = condicoesArtigo(valoresIniciais=valoresIniciais)
 from simulacao.simulacao3d import Simulacao3D
 
 S = Simulacao3D(massas, C.r, C.p, G=G)
-# S.xlim = [-200,200]
-# S.ylim = [-200,200]
-# S.zlim = [-200,200]
 from time import time
 print()
 t0 = time()
 # print('CORREÇÃO MOMENTO ANGULAR')
-S.simular(200, False, False)
+S.simular(50, False, False)
 print()
 print('tempo: ', time() - t0)

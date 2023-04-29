@@ -7,6 +7,7 @@
 from numpy import array, transpose, identity, ones, einsum, true_divide, zeros
 from auxiliares.hamiltoniano import *
 from time import time
+from auxiliares.correcao import correcao
 
 class RK4:
 
@@ -136,20 +137,10 @@ class RK4:
       # integração numérica
       R, P = self.runge_kutta4(R,P,FSomas)
       
-      # F, FSomas = self.forcas(R)
-      # R, P, e = ajustarH(R, P, self.massas, E, FSomas)
-      # R, P = ajusteJ(R, P, J0)
-      # P = ajustePTotal(P, P0)
-      # R = ajusteCentroMassas(self.massas, R, rcm0_int)
-      # ajuste da energia
-
-      # R, P = juntos(R, P, self.massas, E, FSomas, J0)
-
-      # PARECE QUE CORRIGIR A ENERGIA PRIMEIRO E DEPOIS O MOMENTO ANGULAR DÁ MELHOR PRO MOMENTO ANGULAR. VER ISSO!
-
       # níveis de energia e momento angular atuais
       e = H(R, P, self.massas, self.G)
       J = momentoAngular(R,P)
+      R, P = correcao(self.massas, R, P, self.G)
       
       p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
       Ps[0].append(p[0])

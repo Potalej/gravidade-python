@@ -241,9 +241,9 @@ class Simulacao3D (Simulacao):
       ax[2].plot(Ps[2], label="Pz")
       ax[2].legend()
 
-      ax[3].plot(Rcmx, label="Rcmx")
-      ax[3].plot(Rcmy, label="Rcmy")
-      ax[3].plot(Rcmz, label="Rcmz")
+      ax[3].plot(Rcms[0], label="Rcmx")
+      ax[3].plot(Rcms[0], label="Rcmy")
+      ax[3].plot(Rcms[0], label="Rcmz")
       ax[3].legend()
       
       plt.show()
