@@ -140,7 +140,7 @@ class RK4:
       # níveis de energia e momento angular atuais
       e = H(R, P, self.massas, self.G)
       J = momentoAngular(R,P)
-      R, P = correcao(self.massas, R, P, self.G)
+      grads, R, P = correcao(self.massas, R, P, self.G)
       
       p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
       Ps[0].append(p[0])

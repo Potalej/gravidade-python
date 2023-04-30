@@ -3,11 +3,8 @@
 """
 
 from auxiliares.hamiltoniano import H
-from auxiliares.auxiliares import momentoAngular, centro_massas
+from auxiliares.auxiliares import momentoAngular, centro_massas, distancia, produto_interno
 from numpy.linalg import solve
-
-dist = lambda x,y: sum((x[i]-y[i])**2 for i in range(3))**.5
-prodint = lambda x,y: sum(x[i]*y[i] for i in range(len(x)))
 
 # CALCULAR OS GRADIENTES
 
@@ -18,7 +15,7 @@ def gradiente_energia (m, Rs, Ps, N):
     grad_a = [0, 0, 0, Ps[a][0]/m[a], Ps[a][1]/m[a], Ps[a][2]/m[a]]
     for b in range(N):
       if b != a:
-        rab = dist(Rs[a], Rs[b])
+        rab = distancia(Rs[a], Rs[b])
         grad_a[0] += m[b]*(Rs[b][0]-Rs[a][0])/rab**3
         grad_a[1] += m[b]*(Rs[b][1]-Rs[a][1])/rab**3
         grad_a[2] += m[b]*(Rs[b][2]-Rs[a][2])/rab**3
@@ -72,7 +69,7 @@ def matriz_normal (m, M, Rs, Ps, N):
   for gi in grad:
     JJt.append([])
     for gj in grad:
-      JJt[-1].append(prodint(gj, gi))
+      JJt[-1].append(produto_interno(u, v)(gj, gi))
   
   return grad, JJt
 
@@ -123,4 +120,4 @@ def correcao (m, Rs, Ps, G):
     R.append([Rs[a][0] + u[6*a],   Rs[a][1] + u[6*a+1], Rs[a][2] + u[6*a+2]])
     P.append([Ps[a][0] + u[6*a+3], Ps[a][1] + u[6*a+4], Ps[a][2] + u[6*a+5]])
 
-  return R, P
+  return grads, R, P
