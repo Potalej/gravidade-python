@@ -62,7 +62,7 @@ class Simulacao3D (Simulacao):
     self.V = U(self.R,self.massas,self.G)
     return self.R, self.P, self.E
 
-  def simulacar_salvar ():
+  def simulacar_salvar (self):
     self.nomeArquivo = f"pontos_{time()}.txt"
     YK = []
     self.abrirArquivo(self.massas, self.nomeArquivo)
@@ -81,9 +81,9 @@ class Simulacao3D (Simulacao):
     if len(YK) >= 0:
       self.salvarPontos(YK, self.nomeArquivo)
 
-  def simular_exibir ():
+  def simular_exibir (self):
     self.fig = plt.figure(figsize=(12,6), dpi=100)
-    self.ax = self.fig.gca(projection = '3d')
+    self.ax = self.fig.add_subplot(projection = '3d')
     ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=10,  repeat=False)
     plt.show()
 
@@ -118,7 +118,7 @@ class Simulacao3D (Simulacao):
       ###########################
       #         graficos        #
       ###########################
-      self.info_Graficos(Es, Js, Ps_tot, Rcms)      
+      self.info_graficos(Es, Js, Ps_tot, Rcms)      
 
       # visualizacao 
       self.visualizacao(Rs)
@@ -134,7 +134,7 @@ class Simulacao3D (Simulacao):
     for i in range(int(len(R)/100)):
       self.funcao = lambda t: (R[100*i+t], 0, 0)
       self.fig = plt.figure(figsize=(12,6), dpi=100)
-      self.ax = self.fig.gca(projection = '3d')
+      self.ax = self.fig.add_subplot(projection = '3d')
       ani = animation.FuncAnimation(self.fig, self.atualizar, arange(100), interval=10,  repeat=False)
       if not salvar:
         plt.show()
@@ -213,7 +213,7 @@ class Simulacao3D (Simulacao):
 
     return Es, Js, Ps_tot, Rcms
 
-  def info_graficos (Es, Js, Ps_tot, Rcms):
+  def info_graficos (self, Es, Js, Ps_tot, Rcms):
     fig, ax = plt.subplots(1, 4, figsize=(16,8))
 
     ax[0].plot(Es, label="H")
@@ -237,9 +237,9 @@ class Simulacao3D (Simulacao):
     
     plt.show()
 
-  def visualizacao (Rs):
+  def visualizacao (self, Rs):
     self.fig = plt.figure(figsize=(12,6), dpi=100)
-    self.ax = self.fig.gca(projection='3d')
+    self.ax = self.fig.add_subplot(projection='3d')
     Rs = list(zip(*Rs))
     for i in range(self.quantidade_corpos):
       Ri = list(zip(*Rs[i]))

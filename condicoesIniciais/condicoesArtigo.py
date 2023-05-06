@@ -14,7 +14,7 @@ class condicoesArtigo (condicoesIniciais):
     if bool(configs):
     # quantidade de corpos
       self.N = configs['qntdCorpos']
-      super().__init__(self.N, configs['dimensao'])
+      super().__init__(self.N, configs['dimensao'], configs['G'])
 
       # gera o básico
       self.basico(configs)

@@ -69,7 +69,7 @@ def matriz_normal (m, M, Rs, Ps, N):
   for gi in grad:
     JJt.append([])
     for gj in grad:
-      JJt[-1].append(produto_interno(u, v)(gj, gi))
+      JJt[-1].append(produto_interno(gj, gi))
   
   return grad, JJt
 
@@ -120,4 +120,4 @@ def correcao (m, Rs, Ps, G):
     R.append([Rs[a][0] + u[6*a],   Rs[a][1] + u[6*a+1], Rs[a][2] + u[6*a+2]])
     P.append([Ps[a][0] + u[6*a+3], Ps[a][1] + u[6*a+4], Ps[a][2] + u[6*a+5]])
 
-  return grads, R, P
+  return R, P

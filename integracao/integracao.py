@@ -6,6 +6,7 @@
 """
 from numpy import array, transpose, identity, ones, einsum, true_divide, zeros
 from auxiliares.hamiltoniano import *
+from auxiliares.auxiliares import momentoAngular
 from time import time
 from auxiliares.correcao import correcao
 
@@ -140,7 +141,7 @@ class RK4:
       # níveis de energia e momento angular atuais
       e = H(R, P, self.massas, self.G)
       J = momentoAngular(R,P)
-      grads, R, P = correcao(self.massas, R, P, self.G)
+      R, P = correcao(self.massas, R, P, self.G)
       
       p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
       Ps[0].append(p[0])

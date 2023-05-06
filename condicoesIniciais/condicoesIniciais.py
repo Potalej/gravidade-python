@@ -7,7 +7,8 @@ class condicoesIniciais:
     posições, velocidades e momentos dados os limites e
     os intervalos de passo.
   """
-  def __init__ (self, N:int=2, dimensao:int=3):
+  def __init__ (self, N:int=2, dimensao:int=3, G:float=1):
+    self.G = G
     self.N = N
     self.dimensao = dimensao
   
