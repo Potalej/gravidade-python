@@ -16,9 +16,9 @@ def gradiente_energia (m, Rs, Ps, N):
     for b in range(N):
       if b != a:
         rab = distancia(Rs[a], Rs[b])
-        grad_a[0] += m[b]*(Rs[b][0]-Rs[a][0])/rab**3
-        grad_a[1] += m[b]*(Rs[b][1]-Rs[a][1])/rab**3
-        grad_a[2] += m[b]*(Rs[b][2]-Rs[a][2])/rab**3
+        grad_a[0] += m[b]*(Rs[b][0]-Rs[a][0])* (1/rab**3)
+        grad_a[1] += m[b]*(Rs[b][1]-Rs[a][1])* (1/rab**3)
+        grad_a[2] += m[b]*(Rs[b][2]-Rs[a][2])* (1/rab**3)
     grad_a[0] *= -m[a]
     grad_a[1] *= -m[a]
     grad_a[2] *= -m[a]
@@ -79,7 +79,6 @@ def Gx (G, m, M, Rs, Ps, N):
   
   # energia total
   vetG.append(-H(Rs, Ps, m, G))
-  # print('H:', vetG[-1])
 
   # momento angular total
   Js = momentoAngular(Rs, Ps)

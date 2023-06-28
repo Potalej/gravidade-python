@@ -23,7 +23,7 @@ class Simulacao:
 
     # inicializa o método
     self.h = h
-    self.metodo = metodo_integracao(self.massas, self.h, G=G, dimensao=self.dimensao)
+    self.metodo = metodo_integracao(massas=self.massas, h=self.h, G=G, dimensao=self.dimensao)
 
     # energia inicial
     self.E0 = H(self.R, self.P, self.massas, self.G)

@@ -17,7 +17,7 @@ def U (R, m:list, G)->float:
   soma = 0
   for b in range(1, len(m)):
     for a in range(b):
-      soma += m[a]*m[b] / distancia(R[a], R[b])
+      soma += m[a]*m[b] * (1/distancia(R[a], R[b]))
   return -G*soma
 
 def H (R, P, m:list, G)->float:

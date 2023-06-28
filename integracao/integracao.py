@@ -30,7 +30,7 @@ class RK4:
       Dimensão dos problemas.
   """
 
-  def __init__ (self, massas:list, h:float=0.05, G:float=1, dimensao:int=3):
+  def __init__ (self, massas:list, G:float, h:float=0.05, dimensao:int=3):
 
     # dimensão
     self.dimensao = dimensao
@@ -86,9 +86,6 @@ class RK4:
       R : np.array
         Vetor de posições das partículas.
     """
-    # erro = 0
-
-    
     # coordenadas
     X = [[Ri] for Ri in R]
     # matriz X cheia
@@ -127,10 +124,9 @@ class RK4:
 
     return novas_posicoes, novos_momentos
 
-  def aplicarNVezes (self, R, P, n=1, E=0, J0=[0,0,0], P0=[0,0,0], rcm0_int=[0,0,0]):
-    Es = []
-    Js = []
-    Ps = [[],[],[]]
+  def aplicarNVezes (self, R, P, n=1):
+    posicoes = []
+    momentos_lineares = []
     for _ in range(n):
       # forças no instante atual
       F, FSomas = self.forcas(R)
@@ -139,14 +135,12 @@ class RK4:
       R, P = self.runge_kutta4(R,P,FSomas)
       
       # níveis de energia e momento angular atuais
-      e = H(R, P, self.massas, self.G)
-      J = momentoAngular(R,P)
       R, P = correcao(self.massas, R, P, self.G)
+
+      # R, P = correcao(self.massas, R, P, self.G)
+      # R, P = correcao(self.massas, R, P, self.G)
       
-      p = [sum(p[0] for p in P),sum(p[1] for p in P),sum(p[2] for p in P)]
-      Ps[0].append(p[0])
-      Ps[1].append(p[1])
-      Ps[2].append(p[2])
-      Es.append(e)
-      Js.append(J)
-    return R, P, F, Es, Js, Ps
+      # salva as posicoes e os momentos lineares
+      posicoes.append(R)
+      momentos_lineares.append(P)
+    return R, P, posicoes, momentos_lineares

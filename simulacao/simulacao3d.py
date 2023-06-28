@@ -4,7 +4,7 @@ from numpy import arange
 from moviepy.editor import *
 
 from simulacao.simular import Simulacao
-from auxiliares.auxiliares import centro_massas, momento_inercia_cm
+from auxiliares.auxiliares import centro_massas, momento_inercia_cm, momentoAngular
 from auxiliares.hamiltoniano import H, U, EC
 from time import time
 import os
@@ -14,60 +14,41 @@ from tabulate import tabulate
 class Simulacao3D (Simulacao):
 
   def __init__ (self, massas:list, R0: list, P0: list, h:float=0.05, G:float=1):
-    super().__init__(massas, R0, P0, h, G)
+    super().__init__(massas=massas, R0=R0, P0=P0, h=h, G=G)
     self.G = G
     self.exibir_centro_massas = False
     self.xlim = [-1000,1000]
     self.ylim = [-1000,1000]
     self.zlim = [-1000,1000]
+
+  def passo_integracao (self, infosImediatas=False, centroMassas=False):
+    self.R, self.P, self.posicoes, self.momentos_lineares = self.metodo.aplicarNVezes(self.R, self.P, n=self.n)
+    # se quiser usar somente as informacoes imediatas
+    if infosImediatas:
+      # energia
+      self.E = H(self.R, self.P, self.massas, self.G)
+      # momento angular
+      self.J = momentoAngular(self.R, self.P)
+      # centro de massas
+      self.rcm = centro_massas(self.massas, self.R)
+      # momento linear total
+      self.Ptot = [sum(p) for p in list(zip(*self.P))]
+    # ou se quiser somente o centro de massas tambem
+    elif centroMassas:
+      self.rcm = centro_massas(self.massas, self.R)
+    return self.R, self.P
+
+  def integracao (self, infosImediatas=False, centroMassas=False):
+    for _ in range(self.qntdFrames+1):
+      self.passo_integracao(infosImediatas=infosImediatas, centroMassas=centroMassas)
+      yield self.R, self.P
   
-  def funcaoLimitada (self, t=0):
-    for _ in range(self.qntdFrames):
-      self.R, self.P, self.F, Es, Js = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0)
-      self.E = H(self.R,self.P,self.massas,self.G)
-      self.V = U(self.R,self.massas,self.G)
-      yield self.R, self.P, self.E
-  
-  def funcaoLimitada1 (self, t=0):
-    for _ in range(self.qntdFrames):
-      self.R, self.P, self.F, Es, Js, Ps = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0,P0=self.P0_tot, rcm0_int=self.rcm_int)
-      self.E = H(self.R,self.P,self.massas,self.G)
-      self.V = U(self.R,self.massas,self.G)
-      
-      try: self.Es += Es
-      except: self.Es = Es
-
-      try: 
-        self.Js += Js
-        self.JsPasso += [Js[-1]]
-      except: 
-        self.Js = Js
-        self.JsPasso  = [Js[-1]]
-
-      try: 
-        self.Ps[0] += Ps[0]
-        self.Ps[1] += Ps[1]
-        self.Ps[2] += Ps[2]
-      except: 
-        self.Ps = [[],[],[]]
-        self.Ps[0] = Ps[0]
-        self.Ps[1] = Ps[1]
-        self.Ps[2] = Ps[2]
-
-      yield self.R, self.P, self.E
-  
-  def funcao (self, t=0):
-    self.R, self.P, self.F, Es, Js, Ps = self.metodo.aplicarNVezes(self.R,self.P,n=self.n,E=self.E0,J0=self.J0,P0=self.P0_tot, rcm0_int=self.rcm_int)
-    self.E = H(self.R,self.P,self.massas,self.G)
-    self.V = U(self.R,self.massas,self.G)
-    return self.R, self.P, self.E
-
-  def simulacar_salvar (self):
+  def simular_salvar (self):
     self.nomeArquivo = f"pontos_{time()}.txt"
     YK = []
     self.abrirArquivo(self.massas, self.nomeArquivo)
-    for frame in self.funcaoLimitada():
-      R, P, E = frame
+    for frame in self.integracao(infosImediatas=False):
+      R, P = frame
       yk = []
       for i in range(self.quantidade_corpos):
         for j in range(self.dimensao):
@@ -84,7 +65,7 @@ class Simulacao3D (Simulacao):
   def simular_exibir (self):
     self.fig = plt.figure(figsize=(12,6), dpi=100)
     self.ax = self.fig.add_subplot(projection = '3d')
-    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=10,  repeat=False)
+    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=10, repeat=False)
     plt.show()
 
   def simular (self, qntdFrames:int=0, exibir:bool=True, salvar:bool=False)->str:
@@ -93,16 +74,17 @@ class Simulacao3D (Simulacao):
     """
     self.qntdFrames = qntdFrames
 
-    if salvar: self.simulacar_salvar()
+    if salvar: self.simular_salvar()
 
     elif exibir: self.simular_exibir()
 
+    # se nao for salvar nem exibir, apenas apresentar dados
     else:
       Rs, Ps = [], []
       t0 = time()
-      for frame in self.funcaoLimitada1():
+      for frame in self.integracao():
         # resultado do metodo
-        R, P, E = frame
+        R, P = frame
         # salva trajetorias
         Rs.append(R)
         # salva momentos linears totais
@@ -113,12 +95,12 @@ class Simulacao3D (Simulacao):
       ###########################
       #       informacoes       #
       ###########################
-      Es, Js, Ps_tot, Rcms = self.informacoes(Rs, Ps)
+      # Es, Js, Ps_tot, Rcms = self.informacoes(Rs, Ps)
 
       ###########################
       #         graficos        #
       ###########################
-      self.info_graficos(Es, Js, Ps_tot, Rcms)      
+      # self.info_graficos(Es, Js, Ps_tot, Rcms)      
 
       # visualizacao 
       self.visualizacao(Rs)
@@ -158,23 +140,23 @@ class Simulacao3D (Simulacao):
     """
       Função auxiliar para visualizações 3d.
     """
-    R, P, E = self.funcao(t)
+    R, P = self.passo_integracao(infosImediatas=False, centroMassas=True)
+    print('energia: ', H(R, P, self.massas, self.G))
+    print('momento angular: ', momentoAngular(R, P))
+    print()
+    # salva
     try: self.Rs.append(R)
     except: self.Rs = [R]
-    # X, Y, Z = list(zip(*R))
     Ra = list(zip(*self.Rs))
-    # X, Y, Z = list(X), list(Y), list(Z)
+    # limpa o desenho
     self.ax.clear()
-    # self.ax.set_xlim3d(*self.xlim)
-    # self.ax.set_ylim3d(*self.ylim)
-    # self.ax.set_zlim3d(*self.zlim)
-    for i in range(len(R)):
+    # plota as trajetórias
+    for i in range(len(self.massas)):
       X, Y, Z = list(zip(*Ra[i]))
       self.ax.plot(X, Y, Z, c="black") # era 3
-    # self.ax.scatter(X, Y, Z, s=10, c="black") # era 3
+    # plota o centro de massas se quiser
     if self.exibir_centro_massas:
-      Rcm = centro_massas(self.massas, R)
-      self.ax.scatter(Rcm[0], Rcm[1], Rcm[2], color="red")
+      self.ax.scatter(self.rcm[0], self.rcm[1], self.rcm[2], color="red")
 
   def informacoes (self, Rs, Ps):
     # energia
