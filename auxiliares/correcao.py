@@ -9,7 +9,7 @@ from numpy.linalg import solve
 # CALCULAR OS GRADIENTES
 
 # gradiente da energia
-def gradiente_energia (m, Rs, Ps, N):
+def gradiente_energia (G, m, Rs, Ps, N):
   grad = []
   for a in range(N):
     grad_a = [0, 0, 0, Ps[a][0]/m[a], Ps[a][1]/m[a], Ps[a][2]/m[a]]
@@ -19,9 +19,9 @@ def gradiente_energia (m, Rs, Ps, N):
         grad_a[0] += m[b]*(Rs[b][0]-Rs[a][0])* (1/rab**3)
         grad_a[1] += m[b]*(Rs[b][1]-Rs[a][1])* (1/rab**3)
         grad_a[2] += m[b]*(Rs[b][2]-Rs[a][2])* (1/rab**3)
-    grad_a[0] *= -m[a]
-    grad_a[1] *= -m[a]
-    grad_a[2] *= -m[a]
+    grad_a[0] *= -G*m[a]
+    grad_a[1] *= -G*m[a]
+    grad_a[2] *= -G*m[a]
     grad += grad_a
   return grad
 
@@ -56,9 +56,9 @@ def gradiente_centroMassas (m, M, N):
   return grad
 
 # calcular J*Jt
-def matriz_normal (m, M, Rs, Ps, N):
+def matriz_normal (G, m, M, Rs, Ps, N):
   # gradientes
-  gradH = gradiente_energia(m, Rs, Ps, N)
+  gradH = gradiente_energia(G, m, Rs, Ps, N)
   gradJx, gradJy, gradJz = gradiente_momentoAngular(Rs, Ps, N)
   gradPx, gradPy, gradPz = gradiente_momentoLinear(N)
   gradRcmx, gradRcmy, gradRcmz = gradiente_centroMassas(m, M, N)
@@ -107,7 +107,7 @@ def resolverSistema (A, b):
 def correcao (m, Rs, Ps, G):
   N = len(m)
   M = sum(m)
-  grads, JJt = matriz_normal(m, M, Rs, Ps, N)
+  grads, JJt = matriz_normal(G, m, M, Rs, Ps, N)
   vetG = Gx(G, m, M, Rs, Ps, N)
   alphas = list(resolverSistema(JJt, vetG))
 
