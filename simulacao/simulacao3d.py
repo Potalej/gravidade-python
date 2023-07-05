@@ -2,7 +2,9 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 from numpy import arange
 from moviepy.editor import *
+from math import sqrt
 
+from auxiliares.shapedynamics import mudanca_coordenadas
 from simulacao.simular import Simulacao
 from auxiliares.auxiliares import centro_massas, momento_inercia_cm, momentoAngular
 from auxiliares.hamiltoniano import H, U, EC
@@ -141,9 +143,27 @@ class Simulacao3D (Simulacao):
       Função auxiliar para visualizações 3d.
     """
     R, P = self.passo_integracao(infosImediatas=False, centroMassas=True)
-    print('energia: ', H(R, P, self.massas, self.G))
-    print('momento angular: ', momentoAngular(R, P))
-    print()
+    # print('energia: ', H(R, P, self.massas, self.G))
+    # print('momento angular: ', momentoAngular(R, P))
+    # print()
+    
+    # TEMPORARIO
+    # aplica as transformacoes da SD
+    R_sp, P_sp, D, Icm = mudanca_coordenadas(self.massas, R, P)
+
+    # salva o Rsp
+    try: self.Rs_sp.append(R_sp)
+    except: self.Rs_sp = [R_sp]
+    # salva o Psp
+    try: self.Ps_sp.append(P_sp)
+    except: self.Ps_sp = [P_sp]
+    # salva o D
+    try: self.Ds_sp.append(D)
+    except: self.Ds_sp = [D]
+    # salva o Icm
+    try: self.Icms_sp.append(Icm)
+    except: self.Icms_sp = [Icm]
+
     # salva
     try: self.Rs.append(R)
     except: self.Rs = [R]
@@ -152,8 +172,15 @@ class Simulacao3D (Simulacao):
     self.ax.clear()
     # plota as trajetórias
     for i in range(len(self.massas)):
+      self.ax.set_xlim([-100,20])
+      self.ax.set_ylim([-30,200])
+      self.ax.set_zlim([-13,13])
+      # self.ax.set_xlim([-1,1])
+      # self.ax.set_ylim([-1,1])
+      # self.ax.set_zlim([-0.2,0.2])
       X, Y, Z = list(zip(*Ra[i]))
-      self.ax.plot(X, Y, Z, c="black") # era 3
+      # self.ax.plot(X, Y, Z, c="black") # era 3
+      self.ax.scatter(X[-1], Y[-1], Z[-1], c='black')
     # plota o centro de massas se quiser
     if self.exibir_centro_massas:
       self.ax.scatter(self.rcm[0], self.rcm[1], self.rcm[2], color="red")

@@ -108,8 +108,12 @@ def correcao (m, Rs, Ps, G):
   N = len(m)
   M = sum(m)
   grads, JJt = matriz_normal(G, m, M, Rs, Ps, N)
+
   vetG = Gx(G, m, M, Rs, Ps, N)
   alphas = list(resolverSistema(JJt, vetG))
+  if not (-1e-2 < sum(alphas) < 1e-2):
+    print('não corrigiu')
+    return Rs, Ps
 
   u = [[alphas[i]*g for g in grads[i]] for i in range(10)]
   u = [sum(list(i)) for i in list(zip(*u))]

@@ -36,7 +36,7 @@ class Simulacao:
     self.P0_tot = [sum(x) for x in list(zip(*P0))]
 
     # quantidade de integrações por passo
-    self.n = 1
+    self.n = 10
 
     # centro de massas inicial (sem o total de massas)
     self.rcm_int = [

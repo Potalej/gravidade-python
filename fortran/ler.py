@@ -41,9 +41,14 @@ def ler_csv (dir):
     for corpo in range(N):
       # R = [v[corpo]/fator, v[corpo+DIM]/fator, v[corpo+2*DIM]/fator]
       R = [v[corpo]/fator, v[corpo+N]/fator, v[corpo+2*N]/fator]
-      P = [v[N*DIM+corpo], v[N*DIM+corpo+DIM], v[N*DIM+corpo+2*DIM]] # arrumar esse tambem
+      P = [v[N*DIM+corpo], v[N*DIM+corpo+N], v[N*DIM+corpo+2*N]] # arrumar esse tambem
       posicoes[corpo].append(R)
       momentos[corpo].append(P)
+
+  print(momentos[0][0])
+  print(momentos[1][0])
+  print(momentos[2][0])
+  print(momentos[3][0])
 
   tempo = round((time() - tempo)/10, 2)
   print(f"Dados capturados! ({tempo} ms)")
