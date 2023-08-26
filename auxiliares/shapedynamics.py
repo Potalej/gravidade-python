@@ -1,5 +1,5 @@
 """
-  Algumas coisas da Shape Dynamics
+  Funcoes relacionadas a Shape Dynamics.
 """
 
 from math import sqrt
@@ -20,6 +20,21 @@ def momento_dilatacao (Rcms, Pcms):
     for a in range(len(Rcms))
   )
 
+def mudar_posicao (massas, Rcms, Icm):
+  return [
+    [sqrt(massas[a]/Icm)*Rcms[a][i] for i in range(3)]
+    for a in range(len(massas))
+  ]
+
+def mudar_somente_posicao (massas, Rs):
+   # centro de massas
+  rcm = centro_massas(massas, Rs)
+  rcms = [centro_massas_relativo(rcm, ra) for ra in Rs]
+
+  # momento de inercia
+  Icm = momento_inercia_cm(massas, Rs)
+  return mudar_posicao(massas, rcms, Icm)
+
 def mudanca_coordenadas (massas, R, P):
   """
     Aplica a mudanca de coordenadas:
@@ -36,10 +51,7 @@ def mudanca_coordenadas (massas, R, P):
   Icm = momento_inercia_cm(massas, R)
 
   # aplica a transformacao de posicao
-  sigmas = [
-    [sqrt(massas[a]/Icm) * rcms[a][i] for i in range(3)]
-    for a in range(len(massas))
-  ]
+  sigmas = mudar_posicao(massas, Rcms, Icm)
 
   # momentos lineares relativos
   pcm = momento_linear_medio(P)
@@ -47,8 +59,6 @@ def mudanca_coordenadas (massas, R, P):
 
   # momento de dilatacao
   D = momento_dilatacao(rcms, pcms)
-
-  # print('ICM: ', Icm)
 
   # aplica a transformacao de momento linear
   pis = [

@@ -6,9 +6,10 @@
 """
 from numpy import array, transpose, identity, ones, einsum, true_divide, zeros
 from auxiliares.hamiltoniano import *
-from auxiliares.auxiliares import momentoAngular
+from auxiliares.auxiliares import momentoAngular, produto_interno
 from time import time
 from auxiliares.correcao import correcao
+from auxiliares.colisao import colisao
 
 class RK4:
 
@@ -96,7 +97,6 @@ class RK4:
     norma = einsum('ijk,ijk->ij', difX, difX)
     # erro =  ones([self.qntd, self.qntd]) * erro**2
     # norma = (norma + erro)**(3/2) + self.identidade
-    
     norma = (norma)**(3/2) + self.identidade
 
     # matriz de forças
@@ -105,6 +105,19 @@ class RK4:
     # matriz de soma das forças
     FSomas = sum(F)
     return F, FSomas
+
+  def Ks (self, pis):
+    return sum(produto_interno(pi_a) for pi_a in pis)
+
+  def f (self, tau, sigma, pi):
+    Ks = self.Ks(pi)
+    de_sigmas = [ 
+      [2*pi[a][i]/(Ks + tau**2)] for i in range(3)
+      for a in range(len(self.massas))
+    ]
+    de_pis = [
+      [-Ks*sigma[a][i]/(Ks + tau**2) - ]
+    ]
 
   def runge_kutta4 (self, R, P, FSomas):
     """
@@ -133,12 +146,26 @@ class RK4:
       
       # integração numérica
       R, P = self.runge_kutta4(R,P,FSomas)
-      
-      # níveis de energia e momento angular atuais
-      R, P = correcao(self.massas, R, P, self.G)
+    
+      R, P, corrigiu = correcao(self.massas, R, P, self.G)
 
-      # R, P = correcao(self.massas, R, P, self.G)
-      # R, P = correcao(self.massas, R, P, self.G)
+      # if not corrigiu:
+      P = colisao(self.massas, R, P)
+
+      # if not corrigiu:
+      #   print('diminiuindo')
+      #   # da um passo atras
+      #   try:
+      #     R, P = posicoes[-1], momentos_lineares[-1]
+      #   except:
+      #     pass
+      #   qntd = 100
+      #   self.h = self.h/qntd
+      #   R, P, _, _ = self.aplicarNVezes(R, P, n=qntd)
+      #   R, P, corrigiu = correcao(self.massas, R, P, self.G)
+      #   self.h = self.h*qntd
+      #   if not corrigiu:
+      #     P = colisao(self.massas, R, P)
       
       # salva as posicoes e os momentos lineares
       posicoes.append(R)

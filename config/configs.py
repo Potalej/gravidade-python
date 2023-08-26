@@ -1,16 +1,35 @@
 """
-    Configurações gerais do sistema
+  Configuracoes gerais do sistema
 
-    Em vias de facilitar alterações, este arquivo centraliza todas as informações que 
-    são constantes pelo código.
+  Em vias de facilitar alteracoes, este arquivo centraliza todas as informacoes que 
+  sao constantes pelo codigo.
 """
 
-### Partículas
-particulas = {
-    # "DENSIDADE": 30,
-    # "DENSIDADE": 100000,
-    "DENSIDADE": 10,
-}
+# QUANTIDADE DE INTEGRACOES POR PASSO
+SIMULACAO_QNTD_INTEGRACOES_PASSO = 100
+
+# DISTANCIA MINIMA PARA COLISAO
+DIST_MIN_COLISAO = 1
+
+# RANGE DE EXIBICAO DOS GRAFICOS
+RANGE_PLOT_X = [-5000, 5000]
+RANGE_PLOT_Y = [-5000, 5000]
+RANGE_PLOT_Z = [-5000, 5000]
+
+# INTERVALO DE PLOT DAS ANIMACOES
+ANIMACAO_INTERVALO = 10
+
+# DPI DAS ANIMACOES
+ANIMACAO_DPI = 100
+
+# TAMANHO DE RASTRO NAS ANIMACOES
+TAMANHO_RASTRO_ANIMACOES = 0
+
+# QUANTIDADE DE PONTOS GUARDADOS ANTES DE SALVAR
+SIMULACAO_QNTD_SALVAR = 100
+
+# SEPARADOR DOS ARQUIVOS
+SEPARADOR_ARQUIVOS = "\n##########\n"
 
 ### Animação
 animacao = {
@@ -22,7 +41,7 @@ animacao = {
     "ESCALA": 2,
 
     # densidade das partículas. As partículas terão raio "massa" / "densidade"
-    "DENSIDADE": particulas["DENSIDADE"],
+    # "DENSIDADE": particulas["DENSIDADE"],
 
     # cores das partículas (atualmente, lilás)
     "CORES": lambda qntd: [(150, 150, 255) for i in range(qntd)],

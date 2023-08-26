@@ -1,27 +1,63 @@
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
+import numpy as np
 from numpy import arange
 from moviepy.editor import *
 from math import sqrt
 
-from auxiliares.shapedynamics import mudanca_coordenadas
+from auxiliares.shapedynamics import mudar_somente_posicao, momento_dilatacao
 from simulacao.simular import Simulacao
-from auxiliares.auxiliares import centro_massas, momento_inercia_cm, momentoAngular
+from auxiliares.auxiliares import centro_massas, momento_inercia_cm, momentoAngular, norma2
 from auxiliares.hamiltoniano import H, U, EC
 from time import time
 import os
 
 from tabulate import tabulate
 
-class Simulacao3D (Simulacao):
+import config.configs as config
 
-  def __init__ (self, massas:list, R0: list, P0: list, h:float=0.05, G:float=1):
-    super().__init__(massas=massas, R0=R0, P0=P0, h=h, G=G)
+class Simulacao3D (Simulacao):
+  """
+    Para fazer simulacoes tridimensionais bem legais.
+
+    Parametros
+    ----------
+    massas : list
+      Lista de massas das particulas.
+    R0 : list
+      Lista de posicoes iniciais.
+    P0 : list
+      Lista de momentos lineares iniciais.
+    h : float = 0.05
+      Tamanho do passo de integracao.
+    G : float = 1
+      Constante de gravitacao universal.
+    integrador : str = 'rk4'
+      Integrador da simulacao. Por padrao eh o RK4
+    corrigir : bool = False
+      Aplicar ou nao a correcao via KKT 1a ordem
+    colidir : bool = False
+      Aplicar ou nao as colisoes
+    visualizar_2d : bool = False
+      Se quiser visualizar em 2 dimensoes apenas
+  """
+  
+  def __init__ (
+      self,
+      massas        : list,
+      R0            : list,
+      P0            : list,
+      h             : float = 0.05,
+      G             : float = 1,
+      integrador    : str   = 'rk4',
+      corrigir      : bool  = False,
+      colidir       : bool  = False,
+      visualizar_2d : bool  = False
+    ):
+    super().__init__(massas=massas, R0=R0, P0=P0, h=h, G=G, integrador=integrador, corrigir=corrigir, colidir=colidir)
     self.G = G
     self.exibir_centro_massas = False
-    self.xlim = [-1000,1000]
-    self.ylim = [-1000,1000]
-    self.zlim = [-1000,1000]
+    self.visualizar_2d = visualizar_2d
 
   def passo_integracao (self, infosImediatas=False, centroMassas=False):
     self.R, self.P, self.posicoes, self.momentos_lineares = self.metodo.aplicarNVezes(self.R, self.P, n=self.n)
@@ -64,10 +100,16 @@ class Simulacao3D (Simulacao):
     if len(YK) >= 0:
       self.salvarPontos(YK, self.nomeArquivo)
 
+  def simular_exibir_2d (self):
+    self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
+    self.ax = self.fig.add_subplot()
+    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=config.ANIMACAO_INTERVALO, repeat=False)
+    plt.show()
+
   def simular_exibir (self):
-    self.fig = plt.figure(figsize=(12,6), dpi=100)
+    self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
     self.ax = self.fig.add_subplot(projection = '3d')
-    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=10, repeat=False)
+    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=config.ANIMACAO_INTERVALO, repeat=False)
     plt.show()
 
   def simular (self, qntdFrames:int=0, exibir:bool=True, salvar:bool=False)->str:
@@ -78,19 +120,25 @@ class Simulacao3D (Simulacao):
 
     if salvar: self.simular_salvar()
 
+    elif self.visualizar_2d: self.simular_exibir_2d()
+
     elif exibir: self.simular_exibir()
 
     # se nao for salvar nem exibir, apenas apresentar dados
     else:
       Rs, Ps = [], []
       t0 = time()
+      qntd = 0
       for frame in self.integracao():
         # resultado do metodo
         R, P = frame
-        # salva trajetorias
-        Rs.append(R)
-        # salva momentos linears totais
-        Ps.append([sum(pi) for pi in list(zip(*P))])
+        # Salva as trajetorias
+        try: self.Rs.append(R)
+        except: self.Rs = [R]
+        try: self.Ps.append(P)
+        except: self.Ps = [P]
+        qntd += 1
+        if qntd % 100 == 0: print(qntd)
 
       print('TEMPO:', time() - t0, end='\n\n')
 
@@ -105,11 +153,11 @@ class Simulacao3D (Simulacao):
       # self.info_graficos(Es, Js, Ps_tot, Rcms)      
 
       # visualizacao 
-      self.visualizacao(Rs)
+      # self.visualizacao(Rs)
     
   def visualizar (self, R:list, salvar:bool=True):
     """
-      Para somente visualizar uma lista já em mãos.
+      Para somente visualizar uma lista ja em maos.
     """
     if salvar:
       pasta = str(round(time())) 
@@ -139,47 +187,96 @@ class Simulacao3D (Simulacao):
       final.write_videofile(f'pontos/{pasta}/video.mp4')
 
   def atualizar (self, t):
+    """ 
+    Atualiza os frames.
     """
-      Função auxiliar para visualizações 3d.
-    """
+    self.exibir_sd = False
+
+    # integra
     R, P = self.passo_integracao(infosImediatas=False, centroMassas=True)
-    # print('energia: ', H(R, P, self.massas, self.G))
-    # print('momento angular: ', momentoAngular(R, P))
-    # print()
-    
-    # TEMPORARIO
-    # aplica as transformacoes da SD
-    R_sp, P_sp, D, Icm = mudanca_coordenadas(self.massas, R, P)
-
-    # salva o Rsp
-    try: self.Rs_sp.append(R_sp)
-    except: self.Rs_sp = [R_sp]
-    # salva o Psp
-    try: self.Ps_sp.append(P_sp)
-    except: self.Ps_sp = [P_sp]
-    # salva o D
-    try: self.Ds_sp.append(D)
-    except: self.Ds_sp = [D]
-    # salva o Icm
-    try: self.Icms_sp.append(Icm)
-    except: self.Icms_sp = [Icm]
-
     # salva
     try: self.Rs.append(R)
     except: self.Rs = [R]
-    Ra = list(zip(*self.Rs))
+    try: self.Ps.append(P)
+    except: self.Ps = [P]
+
+    # dados importantes
+    # D = momento_dilatacao(R, P)
+    # Icm = momento_inercia_cm(self.massas, R)
+
+    # # salva o D
+    # try: self.Ds_sp.append(D)
+    # except: self.Ds_sp = [D]
+    # # salva o Icm
+    # try: self.Icms_sp.append(Icm)
+    # except: self.Icms_sp = [Icm]
+
     # limpa o desenho
     self.ax.clear()
+
+    # verifica se quer exibir o normal ou o SD
+    if self.visualizar_2d:
+      self.atualizar_2d(t, R, P)
+    elif self.exibir_sd:
+      self.atualizar_sd(t, R, P)
+    else:
+      self.atualizar_coord(t)
+
+  def atualizar_2d (self, t, R, P):
+    """
+      Atualiza a animacao na visao 2d.
+    """
+    self.ax.set_xlim(config.RANGE_PLOT_X)
+    self.ax.set_ylim(config.RANGE_PLOT_Y)
+
+    # Separa as coordenadas
+    Rs = list(zip(*self.Rs))
+    for i in range(len(self.massas)):
+      X, Y, Z = list(zip(*Rs[i]))
+      self.ax.scatter(X[-1], Y[-1], c='red')
+      if config.TAMANHO_RASTRO_ANIMACOES > 0:
+        tamanho_rastro = min([config.TAMANHO_RASTRO_ANIMACOES, len(X)-1])      
+        self.ax.plot(X[-tamanho_rastro:-1], Y[-tamanho_rastro:-1], c='black')
+    
+  def atualizar_sd (self, t, R, P, plotar_circulo:bool=True):
+    """
+      Atualiza a animacao na visao da SD.
+    """
+    # aplica as transformacoes de coordenada da SD
+    R_sp = mudar_somente_posicao(self.massas, R)
+    # salva o Rsp
+    try: self.Rs_sp.append(R_sp)
+    except: self.Rs_sp = [R_sp]
+    # separa as coordenadas
+    Ra = list(zip(*self.Rs_sp))
+    
+    # plota o circulo
+    if plotar_circulo:
+      theta = np.linspace(0, 2 * np.pi, 201)
+      y = np.cos(theta)
+      z = np.sin(theta)
+      self.ax.plot(y,z,z, c='black')
+    cores = ['black' * len(self.massas)] if len(self.cores) == 0 else self.cores
+    # plota as trajetorias
+    for i in range(len(self.massas)):
+      self.ax.set_xlim([-1,1])
+      self.ax.set_ylim([-1,1])
+      self.ax.set_zlim([-1,1])
+      X, Y, Z = list(zip(*Ra[i]))
+      self.ax.plot(X, Y, Z, c=cores[i])
+
+  def atualizar_coord (self, t):
+    """
+      Função auxiliar para visualizações 3d.
+    """
+    # separa as coordenadas
+    Ra = list(zip(*self.Rs))
     # plota as trajetórias
     for i in range(len(self.massas)):
-      self.ax.set_xlim([-100,20])
-      self.ax.set_ylim([-30,200])
-      self.ax.set_zlim([-13,13])
-      # self.ax.set_xlim([-1,1])
-      # self.ax.set_ylim([-1,1])
-      # self.ax.set_zlim([-0.2,0.2])
+      self.ax.set_xlim(config.RANGE_PLOT_X)
+      self.ax.set_ylim(config.RANGE_PLOT_Y)
+      self.ax.set_zlim(config.RANGE_PLOT_Z)
       X, Y, Z = list(zip(*Ra[i]))
-      # self.ax.plot(X, Y, Z, c="black") # era 3
       self.ax.scatter(X[-1], Y[-1], Z[-1], c='black')
     # plota o centro de massas se quiser
     if self.exibir_centro_massas:
@@ -247,40 +344,15 @@ class Simulacao3D (Simulacao):
     plt.show()
 
   def visualizacao (self, Rs):
-    self.fig = plt.figure(figsize=(12,6), dpi=100)
+    self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
     self.ax = self.fig.add_subplot(projection='3d')
     Rs = list(zip(*Rs))
+    
     for i in range(self.quantidade_corpos):
       Ri = list(zip(*Rs[i]))
       self.ax.plot(Ri[0],Ri[1],Ri[2])
       self.ax.scatter(*Rs[i][0])
-    self.ax.set_xlim3d(*[-1000, 1000])
-    self.ax.set_ylim3d(*[-1000, 1000])
+
+    self.ax.set_xlim3d(*config.RANGE_PLOT_X)
+    self.ax.set_ylim3d(*config.RANGE_PLOT_Y)
     plt.show()
-
-  def desigualdade_sundman (self, Rs, Ps):
-    # quadrado da norma do momento angular
-    indice_maximo = 0
-    norma2_J = []
-    for i, J in enumerate(self.JsPasso):
-      c2 = sum(ji**2 for ji in J)
-      if i > 0:
-        if c2 >= max(norma2_J):
-          indice_maximo = i
-      norma2_J.append(c2)
-
-    # 2 I T
-    limitante_J = [
-      2 * momento_inercia_cm(self.massas, Rs[i]) * EC(Ps[i], self.massas) for i in range(len(Rs))
-    ]
-
-    foi_falso = 0
-    for i in range(len(norma2_J)):
-      if norma2_J[i] > limitante_J[i]:
-        foi_falso += 1
-
-    print()
-    print('DESIGUALDADE DE SUNDMAN: ||J||2 <= 2IT ?')
-    print('Maximo: ', norma2_J[indice_maximo], limitante_J[indice_maximo])
-    print('Foi falso', foi_falso, 'vezes')
-    print()
