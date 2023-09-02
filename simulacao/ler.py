@@ -1,12 +1,12 @@
-from config.configs import dados
+import config.configs as config
 
-def ler_arquivo (dir, dim=2):
+def ler_arquivo (dir, dim=3):
   """Faz a leitura de um arquivo com as informações"""
   with open(dir, 'r') as arquivo:
     Ps, Rs = [], []
     arquivo = arquivo.read()
-    partes = arquivo.split(dados['SEPARADOR'])
-    
+    partes = arquivo.split(config.SEPARADOR_ARQUIVOS)
+    print(partes[1][:10])
     massas = [float(massa) for massa in partes[0].split(',')]
     
     passos = partes[1].split('\n')

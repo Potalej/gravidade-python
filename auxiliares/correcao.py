@@ -108,8 +108,10 @@ def correcao (m, Rs, Ps, G):
   N = len(m)
   M = sum(m)
   grads, JJt = matriz_normal(G, m, M, Rs, Ps, N)
+
   vetG = Gx(G, m, M, Rs, Ps, N)
-  alphas = list(resolverSistema(JJt, vetG))
+  try: alphas = list(resolverSistema(JJt, vetG))
+  except: return Rs, Ps, False
 
   u = [[alphas[i]*g for g in grads[i]] for i in range(10)]
   u = [sum(list(i)) for i in list(zip(*u))]
@@ -119,4 +121,4 @@ def correcao (m, Rs, Ps, G):
     R.append([Rs[a][0] + u[6*a],   Rs[a][1] + u[6*a+1], Rs[a][2] + u[6*a+2]])
     P.append([Ps[a][0] + u[6*a+3], Ps[a][1] + u[6*a+4], Ps[a][2] + u[6*a+5]])
 
-  return R, P
+  return R, P, True

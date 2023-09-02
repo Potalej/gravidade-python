@@ -74,13 +74,6 @@ def tensor_inercia_geral (m, R):
         I[i][j] += Ia[i][j]
   return I
 
-def complexidade (I, mtot, energia_potencial):
-  """Calcula a complexidade a partir do momento de inércia."""
-  L_rms = (I**.5)/mtot
-  L_mhl = mtot**2 / abs(energia_potencial)
-  C = L_rms/L_mhl
-  return C
-
 def distancia (u, v):
   """Distancia euclidiana entre dois pontos no espaco."""
   return norma2([u[i]-v[i] for i in range(len(u))])**0.5
