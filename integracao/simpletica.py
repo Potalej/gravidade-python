@@ -46,9 +46,10 @@ class Verlet:
     return Fsomas
 
 
-  def integrar (self, R0, P0):
-    # Gera matriz de forcas
-    Fsomas = self.forcas(R0)
+  def integrar (self, R0, P0, Fsomas=[]):
+    if len(Fsomas) == 0:
+      # Gera matriz de forcas
+      Fsomas = self.forcas(R0)
 
     # Velocity Verlet
     R, P = [],[]
@@ -70,15 +71,16 @@ class Verlet:
         pa = P0[a][i] + 0.5 * self.h * (Fsomas[a][i] + Fsomas_apos[a][i])
         P[-1].append(pa)
     
-    return R, P
+    return R, P, Fsomas_apos
 
   def aplicarNVezes (self, R0, P0, n=1):
     posicoes = []
     momentos_lineares = []
     R, P = R0, P0
+    F = self.forcas(R)
     for _ in range(n):
       # integra
-      R, P = self.integrar(R, P)
+      R, P, F = self.integrar(R, P, F)
 
       if self.corrigir:
         R, P, corrigiu = correcao(self.massas, R, P, self.G)

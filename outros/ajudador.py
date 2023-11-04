@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from auxiliares.hamiltoniano import H, U
-from auxiliares.auxiliares import momento_inercia_cm, momentoAngular, centro_massas, complexidade as C
-from auxiliares.shapedynamics import momento_dilatacao
+from auxiliares.auxiliares import momento_inercia_cm, momentoAngular, centro_massas
+from auxiliares.shapedynamics import momento_dilatacao, complexidade as C
 
 def informacoes_basicas (
     m                 : list,

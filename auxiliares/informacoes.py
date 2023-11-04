@@ -1,5 +1,6 @@
 from auxiliares.hamiltoniano import H, U
-from auxiliares.auxiliares import momentoAngular, centro_massas, momento_inercia_cm, complexidade
+from auxiliares.auxiliares import momentoAngular, centro_massas, momento_inercia_cm
+from auxiliares.shapedynamics import complexidade
 from statistics import mean, stdev
 
 class Info:

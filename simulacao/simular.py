@@ -1,6 +1,7 @@
 import config.configs as config
-from auxiliares.auxiliares import momento_inercia_cm, centro_massas, complexidade, momentoAngular
+from auxiliares.auxiliares import momento_inercia_cm, centro_massas, momentoAngular
 from auxiliares.hamiltoniano import H, U
+from auxiliares.shapedynamics import complexidade
 from integracao.rk4 import RK4
 from integracao.simpletica import Verlet
 

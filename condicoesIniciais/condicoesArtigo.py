@@ -6,7 +6,7 @@ from condicoesIniciais.condicoesIniciais import condicoesIniciais
 
 class condicoesArtigo (condicoesIniciais):
   
-  def __init__ (self, configs:dict={}, valoresIniciais:dict={}):
+  def __init__ (self, configs:dict={}, valoresIniciais:dict={}, energia:float=0):
     """
       Gera as coordenadas básicas.
     """
@@ -34,6 +34,7 @@ class condicoesArtigo (condicoesIniciais):
       raise ValueError("Nenhum valor informado!")
 
     # aplicando as condições sobre os valores gerados
+    self.opcao_energia = energia
     self.condicionar()
     
 
@@ -160,10 +161,20 @@ class condicoesArtigo (condicoesIniciais):
     # calcula a energia potencial atual
     energia_potencial = U(self.r, self.massas, self.G)
 
-    # fator de razão
+    # Eh possivel zerar via homotetia tambem. Para isso, basta multiplicar 
+    # todas as posicoes por V/T
+
+    # fator de razao
     fator = (-energia_potencial/energia_cinetica)**.5
 
     for a in range(self.N):
       for i in range(self.dimensao):
         self.p[a][i] *= fator
         self.v[a][i] = self.p[a][i]/self.massas[a]
+
+    if self.opcao_energia != 0:
+      # Agora aplica uma homotetia para gerar Et = H2
+      H2 = self.opcao_energia
+      for a in range(self.N):
+        for i in range(self.dimensao):
+          self.r[a][i] *= energia_potencial/(energia_potencial + H2)

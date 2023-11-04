@@ -52,12 +52,10 @@ class Simulacao3D (Simulacao):
       integrador    : str   = 'rk4',
       corrigir      : bool  = False,
       colidir       : bool  = False,
-      visualizar_2d : bool  = False
     ):
     super().__init__(massas=massas, R0=R0, P0=P0, h=h, G=G, integrador=integrador, corrigir=corrigir, colidir=colidir)
     self.G = G
     self.exibir_centro_massas = False
-    self.visualizar_2d = visualizar_2d
 
   def passo_integracao (self, infosImediatas=False, centroMassas=False):
     self.R, self.P, self.posicoes, self.momentos_lineares = self.metodo.aplicarNVezes(self.R, self.P, n=self.n)
@@ -101,28 +99,47 @@ class Simulacao3D (Simulacao):
       self.salvarPontos(YK, self.nomeArquivo)
 
   def simular_exibir_2d (self):
+    self.visualizar_sd = False
+    self.visualizar_2d = True
     self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
     self.ax = self.fig.add_subplot()
     ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=config.ANIMACAO_INTERVALO, repeat=False)
     plt.show()
 
   def simular_exibir (self):
+    self.exibir_sd = False
+    self.visualizar_2d = False
     self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
     self.ax = self.fig.add_subplot(projection = '3d')
     ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=config.ANIMACAO_INTERVALO, repeat=False)
     plt.show()
 
-  def simular (self, qntdFrames:int=0, exibir:bool=True, salvar:bool=False)->str:
+  def simular_exibir_sd (self):
+    self.exibir_sd = True
+    self.visualizar_2d = False
+    self.fig = plt.figure(figsize=(12,6), dpi=config.ANIMACAO_DPI)
+    self.ax = self.fig.add_subplot(projection = '3d')
+    ani = animation.FuncAnimation(self.fig, self.atualizar, arange(self.qntdFrames), interval=config.ANIMACAO_INTERVALO, repeat=False)
+    plt.show()
+
+  def simular (self, qntdFrames:int=0, visualizacao:str='3d', salvar:bool=False, expandir:bool=True)->str:
     """
       Faz uma simulação 3d usando as condições iniciais informadas.
     """
     self.qntdFrames = qntdFrames
+    self.expandir = expandir
 
     if salvar: self.simular_salvar()
 
-    elif self.visualizar_2d: self.simular_exibir_2d()
+    elif visualizacao == '2d': 
+      self.visualizacao_2d = True
+      self.simular_exibir_2d()
 
-    elif exibir: self.simular_exibir()
+    elif visualizacao == '3d': 
+      self.simular_exibir()
+
+    elif visualizacao == 'sd':
+      self.simular_exibir_sd()
 
     # se nao for salvar nem exibir, apenas apresentar dados
     else:
@@ -139,22 +156,9 @@ class Simulacao3D (Simulacao):
         except: self.Ps = [P]
         qntd += 1
         if qntd % 100 == 0: print(qntd)
-
+      
       print('TEMPO:', time() - t0, end='\n\n')
 
-      ###########################
-      #       informacoes       #
-      ###########################
-      # Es, Js, Ps_tot, Rcms = self.informacoes(Rs, Ps)
-
-      ###########################
-      #         graficos        #
-      ###########################
-      # self.info_graficos(Es, Js, Ps_tot, Rcms)      
-
-      # visualizacao 
-      # self.visualizacao(Rs)
-    
   def visualizar (self, R:list, salvar:bool=True):
     """
       Para somente visualizar uma lista ja em maos.
@@ -162,9 +166,9 @@ class Simulacao3D (Simulacao):
     if salvar:
       pasta = str(round(time())) 
       os.mkdir(f'pontos/{pasta}')
-    # vai de 1000 em 1000
-    for i in range(int(len(R)/100)):
-      self.funcao = lambda t: (R[100*i+t], 0, 0)
+
+    for i in range(len(R)):
+      self.funcao = lambda t: (R[i+t], 0, 0)
       self.fig = plt.figure(figsize=(12,6), dpi=100)
       self.ax = self.fig.add_subplot(projection = '3d')
       ani = animation.FuncAnimation(self.fig, self.atualizar, arange(100), interval=10,  repeat=False)
@@ -190,8 +194,6 @@ class Simulacao3D (Simulacao):
     """ 
     Atualiza os frames.
     """
-    self.exibir_sd = False
-
     # integra
     R, P = self.passo_integracao(infosImediatas=False, centroMassas=True)
     # salva
@@ -199,17 +201,6 @@ class Simulacao3D (Simulacao):
     except: self.Rs = [R]
     try: self.Ps.append(P)
     except: self.Ps = [P]
-
-    # dados importantes
-    # D = momento_dilatacao(R, P)
-    # Icm = momento_inercia_cm(self.massas, R)
-
-    # # salva o D
-    # try: self.Ds_sp.append(D)
-    # except: self.Ds_sp = [D]
-    # # salva o Icm
-    # try: self.Icms_sp.append(Icm)
-    # except: self.Icms_sp = [Icm]
 
     # limpa o desenho
     self.ax.clear()
@@ -233,7 +224,16 @@ class Simulacao3D (Simulacao):
     Rs = list(zip(*self.Rs))
     for i in range(len(self.massas)):
       X, Y, Z = list(zip(*Rs[i]))
-      self.ax.scatter(X[-1], Y[-1], c='red')
+
+      if self.expandir:
+        # Verifica se precisa aumentar o tamanho do plot
+        if X[-1] < config.RANGE_PLOT_X[0] or X[-1] > config.RANGE_PLOT_X[1]:
+          config.RANGE_PLOT_X = [2*x for x in config.RANGE_PLOT_X]
+        if Y[-1] < config.RANGE_PLOT_Y[0] or Y[-1] > config.RANGE_PLOT_Y[1]:
+          config.RANGE_PLOT_Y = [2*y for y in config.RANGE_PLOT_Y]
+
+      self.ax.scatter(X[-1], Y[-1])
+      
       if config.TAMANHO_RASTRO_ANIMACOES > 0:
         tamanho_rastro = min([config.TAMANHO_RASTRO_ANIMACOES, len(X)-1])      
         self.ax.plot(X[-tamanho_rastro:-1], Y[-tamanho_rastro:-1], c='black')
@@ -256,14 +256,19 @@ class Simulacao3D (Simulacao):
       y = np.cos(theta)
       z = np.sin(theta)
       self.ax.plot(y,z,z, c='black')
-    cores = ['black' * len(self.massas)] if len(self.cores) == 0 else self.cores
+
     # plota as trajetorias
     for i in range(len(self.massas)):
       self.ax.set_xlim([-1,1])
       self.ax.set_ylim([-1,1])
       self.ax.set_zlim([-1,1])
+      
       X, Y, Z = list(zip(*Ra[i]))
-      self.ax.plot(X, Y, Z, c=cores[i])
+      self.ax.scatter(X[-1],Y[-1],Z[-1])
+
+      if config.TAMANHO_RASTRO_ANIMACOES > 0:
+        tamanho_rastro = min([config.TAMANHO_RASTRO_ANIMACOES, len(X)-1])      
+        self.ax.plot(X[-tamanho_rastro:-1], Y[-tamanho_rastro:-1], Z[-tamanho_rastro:-1], c='black')
 
   def atualizar_coord (self, t):
     """
@@ -273,11 +278,28 @@ class Simulacao3D (Simulacao):
     Ra = list(zip(*self.Rs))
     # plota as trajetórias
     for i in range(len(self.massas)):
+      
       self.ax.set_xlim(config.RANGE_PLOT_X)
       self.ax.set_ylim(config.RANGE_PLOT_Y)
       self.ax.set_zlim(config.RANGE_PLOT_Z)
+
       X, Y, Z = list(zip(*Ra[i]))
-      self.ax.scatter(X[-1], Y[-1], Z[-1], c='black')
+
+      if self.expandir:
+        # Verifica se precisa aumentar o tamanho do plot
+        if X[-1] < config.RANGE_PLOT_X[0] or X[-1] > config.RANGE_PLOT_X[1]:
+          config.RANGE_PLOT_X = [2*x for x in config.RANGE_PLOT_X]
+        if Y[-1] < config.RANGE_PLOT_Y[0] or Y[-1] > config.RANGE_PLOT_Y[1]:
+          config.RANGE_PLOT_Y = [2*y for y in config.RANGE_PLOT_Y]
+        if Z[-1] < config.RANGE_PLOT_Z[0] or Z[-1] > config.RANGE_PLOT_Z[1]:
+          config.RANGE_PLOT_Z = [2*z for z in config.RANGE_PLOT_Z]
+
+      self.ax.scatter(X[-1], Y[-1], Z[-1])
+
+      if config.TAMANHO_RASTRO_ANIMACOES > 0:
+        tamanho_rastro = min([config.TAMANHO_RASTRO_ANIMACOES, len(X)-1])      
+        self.ax.plot(X[-tamanho_rastro:-1], Y[-tamanho_rastro:-1], Z[-tamanho_rastro:-1], c='black')
+
     # plota o centro de massas se quiser
     if self.exibir_centro_massas:
       self.ax.scatter(self.rcm[0], self.rcm[1], self.rcm[2], color="red")
